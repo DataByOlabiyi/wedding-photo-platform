@@ -1,9 +1,11 @@
 "use client"
 
 import { useMemo } from "react"
-import { Camera } from "lucide-react"
+import Link from "next/link"
+import { Camera, ImagePlus } from "lucide-react"
 import { useMedia } from "@/lib/media-context"
 import { GuestFolderCard } from "@/components/guest-folder-card"
+import { Button } from "@/components/ui/button"
 import type { GuestFolder } from "@/lib/types"
 
 export function FolderGrid() {
@@ -49,12 +51,14 @@ export function FolderGrid() {
 
   if (isLoading) {
     return (
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {Array.from({ length: 8 }).map((_, i) => (
-          <div
-            key={i}
-            className="aspect-[4/5] animate-pulse rounded-2xl bg-muted"
-          />
+          <div key={i} className="overflow-hidden rounded-2xl bg-card shadow-sm ring-1 ring-border/50">
+            <div className="aspect-[4/3] animate-pulse bg-muted" />
+            <div className="border-t border-border/50 p-4">
+              <div className="h-4 w-24 animate-pulse rounded bg-muted" />
+            </div>
+          </div>
         ))}
       </div>
     )
@@ -62,22 +66,28 @@ export function FolderGrid() {
 
   if (guestFolders.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-20 text-center">
-        <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-muted">
-          <Camera className="h-10 w-10 text-muted-foreground" />
+      <div className="flex flex-col items-center justify-center rounded-3xl border border-dashed border-border bg-card/50 py-20 text-center">
+        <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-primary/10">
+          <Camera className="h-10 w-10 text-primary" />
         </div>
         <h3 className="font-serif text-2xl font-semibold text-foreground">
           No Photos Yet
         </h3>
-        <p className="mt-2 max-w-sm text-muted-foreground">
+        <p className="mx-auto mt-2 max-w-sm text-muted-foreground">
           Be the first to share your memories from our special day.
         </p>
+        <Link href="/upload" className="mt-6">
+          <Button className="gap-2 rounded-full">
+            <ImagePlus className="h-4 w-4" />
+            Upload Photos
+          </Button>
+        </Link>
       </div>
     )
   }
 
   return (
-    <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
       {guestFolders.map((folder) => (
         <GuestFolderCard key={folder.guestId} folder={folder} />
       ))}

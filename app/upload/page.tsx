@@ -12,6 +12,8 @@ import {
   Loader2,
   ImagePlus,
   X,
+  Heart,
+  Sparkles,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
@@ -269,20 +271,41 @@ export default function UploadPage() {
             <span className="font-medium">Back</span>
           </Link>
           
-          <span className="font-serif text-lg font-semibold text-foreground">
-            Upload Photos
-          </span>
+          <div className="flex items-center gap-2">
+            <Camera className="h-5 w-5 text-primary" />
+            <span className="font-serif text-lg font-semibold text-foreground">
+              Add Photos
+            </span>
+          </div>
           
           <div className="w-16" />
         </div>
       </header>
 
       <main className="container mx-auto max-w-2xl px-4 py-8">
+        {/* Hero Section */}
+        <div className="mb-8 text-center">
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
+            <Heart className="h-8 w-8 text-primary" />
+          </div>
+          <h1 className="font-serif text-3xl font-semibold text-foreground">
+            Share Your Memories
+          </h1>
+          <p className="mt-2 text-muted-foreground">
+            Help us capture every beautiful moment
+          </p>
+        </div>
+
         {/* User Info */}
         {guestName && (
-          <div className="mb-6 rounded-xl bg-card p-4 text-center">
-            <p className="text-sm text-muted-foreground">Uploading as</p>
-            <p className="font-serif text-xl font-semibold text-foreground">{guestName}</p>
+          <div className="mb-6 flex items-center justify-center gap-3 rounded-2xl bg-card p-4 ring-1 ring-border/50">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 font-semibold text-primary">
+              {guestName.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)}
+            </div>
+            <div className="text-left">
+              <p className="text-xs text-muted-foreground">Uploading as</p>
+              <p className="font-medium text-foreground">{guestName}</p>
+            </div>
           </div>
         )}
 
@@ -291,10 +314,10 @@ export default function UploadPage() {
           onDrop={handleDrop}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
-          className={`relative rounded-2xl border-2 border-dashed transition-all ${
+          className={`relative cursor-pointer overflow-hidden rounded-3xl border-2 border-dashed transition-all duration-300 ${
             isDragging
-              ? "border-primary bg-primary/5"
-              : "border-border hover:border-primary/50 hover:bg-muted/50"
+              ? "border-primary bg-primary/5 scale-[1.02]"
+              : "border-border hover:border-primary/50 hover:bg-muted/30"
           }`}
         >
           <input
@@ -308,14 +331,18 @@ export default function UploadPage() {
           />
           
           <div className="flex flex-col items-center justify-center py-16 text-center">
-            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
-              <ImagePlus className="h-8 w-8 text-primary" />
+            <div className={`mb-4 flex h-20 w-20 items-center justify-center rounded-full transition-all duration-300 ${
+              isDragging ? "bg-primary/20 scale-110" : "bg-primary/10"
+            }`}>
+              <ImagePlus className={`h-10 w-10 transition-colors ${
+                isDragging ? "text-primary" : "text-primary/70"
+              }`} />
             </div>
             <h3 className="font-serif text-xl font-semibold text-foreground">
-              {isDragging ? "Drop files here" : "Add Photos & Videos"}
+              {isDragging ? "Drop to upload" : "Add Photos & Videos"}
             </h3>
             <p className="mt-2 text-sm text-muted-foreground">
-              Drag and drop or click to select
+              Drag and drop or tap to select
             </p>
             <p className="mt-1 text-xs text-muted-foreground">
               Up to {MAX_FILES} files, max {MAX_FILE_SIZE_MB}MB each
@@ -327,11 +354,12 @@ export default function UploadPage() {
         {uploads.length > 0 && (
           <div className="mt-8">
             <div className="mb-4 flex items-center justify-between">
-              <h3 className="font-serif text-lg font-semibold text-foreground">
-                {allComplete ? "Upload Complete" : "Uploading..."}
+              <h3 className="flex items-center gap-2 font-serif text-lg font-semibold text-foreground">
+                {allComplete && <Sparkles className="h-5 w-5 text-primary" />}
+                {allComplete ? "Upload Complete!" : "Uploading..."}
               </h3>
-              <span className="text-sm text-muted-foreground">
-                {completedCount} of {uploads.length} complete
+              <span className="rounded-full bg-primary/10 px-3 py-1 text-sm font-medium text-primary">
+                {completedCount} / {uploads.length}
               </span>
             </div>
             
@@ -346,13 +374,23 @@ export default function UploadPage() {
             </div>
 
             {allComplete && (
-              <Button
-                onClick={() => router.push("/")}
-                className="mt-6 w-full"
-                size="lg"
-              >
-                View Gallery
-              </Button>
+              <div className="mt-8 space-y-3">
+                <Button
+                  onClick={() => router.push("/")}
+                  className="w-full rounded-full"
+                  size="lg"
+                >
+                  View Gallery
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setUploads([])}
+                  className="w-full rounded-full"
+                  size="lg"
+                >
+                  Upload More
+                </Button>
+              </div>
             )}
           </div>
         )}
@@ -372,33 +410,52 @@ function UploadItem({
   upload: UploadStatus
   onRemove: () => void
 }) {
-  const statusIcons = {
-    pending: <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />,
-    compressing: <Loader2 className="h-4 w-4 animate-spin text-primary" />,
-    uploading: <Upload className="h-4 w-4 text-primary animate-pulse" />,
-    complete: <CheckCircle2 className="h-4 w-4 text-green-600" />,
-    error: <AlertCircle className="h-4 w-4 text-destructive" />,
+  const statusConfig = {
+    pending: {
+      icon: <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />,
+      label: "Waiting...",
+      color: "text-muted-foreground",
+    },
+    compressing: {
+      icon: <Loader2 className="h-4 w-4 animate-spin text-primary" />,
+      label: "Optimizing...",
+      color: "text-primary",
+    },
+    uploading: {
+      icon: <Upload className="h-4 w-4 text-primary animate-pulse" />,
+      label: "Uploading...",
+      color: "text-primary",
+    },
+    complete: {
+      icon: <CheckCircle2 className="h-4 w-4 text-green-600" />,
+      label: "Done",
+      color: "text-green-600",
+    },
+    error: {
+      icon: <AlertCircle className="h-4 w-4 text-destructive" />,
+      label: upload.error || "Failed",
+      color: "text-destructive",
+    },
   }
 
-  const statusLabels = {
-    pending: "Waiting...",
-    compressing: "Compressing...",
-    uploading: "Uploading...",
-    complete: "Complete",
-    error: upload.error || "Error",
-  }
-
+  const status = statusConfig[upload.status]
   const canRemove = upload.status === "complete" || upload.status === "error"
+  const showProgress = upload.status !== "complete" && upload.status !== "error"
 
   return (
-    <div className="flex items-center gap-4 rounded-xl bg-card p-3">
+    <div className="flex items-center gap-4 rounded-2xl bg-card p-3 ring-1 ring-border/50 transition-all hover:ring-border">
       {/* Preview */}
-      <div className="relative h-14 w-14 flex-shrink-0 overflow-hidden rounded-lg bg-muted">
+      <div className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-xl bg-muted">
         <img
           src={upload.preview}
           alt=""
           className="h-full w-full object-cover"
         />
+        {upload.status === "complete" && (
+          <div className="absolute inset-0 flex items-center justify-center bg-green-600/20">
+            <CheckCircle2 className="h-6 w-6 text-green-600" />
+          </div>
+        )}
       </div>
 
       {/* Info */}
@@ -407,13 +464,13 @@ function UploadItem({
           {upload.file.name}
         </p>
         <div className="flex items-center gap-2 mt-1">
-          {statusIcons[upload.status]}
-          <span className="text-xs text-muted-foreground">
-            {statusLabels[upload.status]}
+          {status.icon}
+          <span className={`text-xs ${status.color}`}>
+            {status.label}
           </span>
         </div>
-        {upload.status !== "complete" && upload.status !== "error" && (
-          <Progress value={upload.progress} className="h-1 mt-2" />
+        {showProgress && (
+          <Progress value={upload.progress} className="h-1.5 mt-2" />
         )}
       </div>
 
@@ -421,7 +478,7 @@ function UploadItem({
       {canRemove && (
         <button
           onClick={onRemove}
-          className="flex-shrink-0 p-1 text-muted-foreground hover:text-foreground transition-colors"
+          className="flex-shrink-0 rounded-full p-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
         >
           <X className="h-4 w-4" />
         </button>

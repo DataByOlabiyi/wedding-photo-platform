@@ -1,10 +1,10 @@
 "use client"
 
-import { useState, useEffect, useMemo } from "react"
+import { useState, useMemo } from "react"
 import { useParams } from "next/navigation"
 import Image from "next/image"
 import Link from "next/link"
-import { ArrowLeft, Download, Camera, Play } from "lucide-react"
+import { ArrowLeft, Download, Camera, Play, User, Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useMedia } from "@/lib/media-context"
 import { MediaLightbox } from "@/components/media-lightbox"
@@ -37,6 +37,13 @@ export default function GuestMediaPage() {
     }
   }
 
+  const initials = guestId
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2)
+
   if (isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
@@ -66,7 +73,7 @@ export default function GuestMediaPage() {
               variant="outline"
               size="sm"
               onClick={handleDownloadAll}
-              className="gap-2"
+              className="gap-2 rounded-full"
             >
               <Download className="h-4 w-4" />
               <span className="hidden sm:inline">Download All</span>
@@ -76,8 +83,11 @@ export default function GuestMediaPage() {
       </header>
 
       <main className="container mx-auto px-4 py-8">
-        {/* Guest Info */}
-        <div className="mb-8">
+        {/* Guest Info Hero */}
+        <div className="mb-10 text-center">
+          <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-primary/10 text-2xl font-semibold text-primary">
+            {initials || <User className="h-8 w-8" />}
+          </div>
           <h1 className="font-serif text-3xl font-semibold text-foreground md:text-4xl">
             {guestId}
           </h1>
@@ -98,7 +108,7 @@ export default function GuestMediaPage() {
             ))}
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center py-20 text-center">
+          <div className="flex flex-col items-center justify-center rounded-3xl border border-dashed border-border bg-card/50 py-20 text-center">
             <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-muted">
               <Camera className="h-10 w-10 text-muted-foreground" />
             </div>
@@ -109,18 +119,32 @@ export default function GuestMediaPage() {
               This guest hasn&apos;t shared any photos yet.
             </p>
             <Link href="/">
-              <Button className="mt-6">Back to Gallery</Button>
+              <Button className="mt-6 rounded-full">Back to Gallery</Button>
             </Link>
           </div>
         )}
       </main>
 
+      {/* Floating Add Button */}
+      <Link
+        href="/upload"
+        className="fixed bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 transition-all hover:scale-110 hover:shadow-xl hover:shadow-primary/40 active:scale-95 md:bottom-8 md:right-8 md:h-16 md:w-16"
+        aria-label="Upload photos"
+      >
+        <Plus className="h-7 w-7 md:h-8 md:w-8" />
+      </Link>
+
       {/* Lightbox */}
-      {selectedIndex !== null && (
+      {selectedIndex !== null && guestMedia[selectedIndex] && (
         <MediaLightbox
-          media={guestMedia}
-          initialIndex={selectedIndex}
+          media={guestMedia[selectedIndex]}
           onClose={() => setSelectedIndex(null)}
+          onPrevious={() => setSelectedIndex((prev) => (prev !== null && prev > 0 ? prev - 1 : prev))}
+          onNext={() => setSelectedIndex((prev) => (prev !== null && prev < guestMedia.length - 1 ? prev + 1 : prev))}
+          hasPrevious={selectedIndex > 0}
+          hasNext={selectedIndex < guestMedia.length - 1}
+          currentIndex={selectedIndex}
+          totalCount={guestMedia.length}
         />
       )}
     </div>
@@ -139,7 +163,7 @@ function MediaThumbnail({
   return (
     <button
       onClick={onClick}
-      className="group relative aspect-square w-full overflow-hidden rounded-xl bg-muted focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+      className="group relative aspect-square w-full overflow-hidden rounded-xl bg-muted ring-1 ring-border/50 transition-all duration-300 hover:ring-primary/50 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
     >
       <Image
         src={item.thumbnail_url || item.file_url}
