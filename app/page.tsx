@@ -1,34 +1,18 @@
 "use client"
 
-import { useState, useEffect } from "react"
 import Link from "next/link"
 import { Plus } from "lucide-react"
-import { useGuestIdentity } from "@/hooks/use-guest-identity"
 import { useMedia } from "@/lib/media-context"
 import { Header } from "@/components/header"
 import { Hero } from "@/components/hero"
 import { FolderGrid } from "@/components/folder-grid"
-import { GuestNameModal } from "@/components/guest-name-modal"
 
 export default function HomePage() {
-  const { setGuestName, isLoading, hasIdentity } = useGuestIdentity()
-  const { media } = useMedia()
-  const [showNameModal, setShowNameModal] = useState(false)
+  const { media, isLoading } = useMedia()
 
   // Calculate stats
   const totalPhotos = media.length
   const totalGuests = new Set(media.map((m) => m.uploaded_by)).size
-
-  useEffect(() => {
-    if (!isLoading && !hasIdentity) {
-      setShowNameModal(true)
-    }
-  }, [isLoading, hasIdentity])
-
-  const handleNameSubmit = (name: string) => {
-    setGuestName(name)
-    setShowNameModal(false)
-  }
 
   if (isLoading) {
     return (
@@ -72,10 +56,6 @@ export default function HomePage() {
       >
         <Plus className="h-7 w-7 md:h-8 md:w-8" />
       </Link>
-
-      {showNameModal && (
-        <GuestNameModal onSubmit={handleNameSubmit} />
-      )}
     </div>
   )
 }
