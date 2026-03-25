@@ -1,0 +1,431 @@
+"use client"
+
+import { useState, useRef, useCallback, useEffect } from "react"
+import { useRouter } from "next/navigation"
+import Link from "next/link"
+import {
+  ArrowLeft,
+  Camera,
+  Upload,
+  CheckCircle2,
+  AlertCircle,
+  Loader2,
+  ImagePlus,
+  X,
+} from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Progress } from "@/components/ui/progress"
+import { useGuestIdentity } from "@/hooks/use-guest-identity"
+import { GuestNameModal } from "@/components/guest-name-modal"
+import { createClient } from "@/lib/supabase/client"
+import {
+  compressImage,
+  generateThumbnail,
+  generateVideoThumbnail,
+  isImageFile,
+  isVideoFile,
+  getMediaType,
+} from "@/lib/image-compression"
+import { useMedia } from "@/lib/media-context"
+
+interface UploadStatus {
+  file: File
+  preview: string
+  progress: number
+  status: "pending" | "compressing" | "uploading" | "complete" | "error"
+  error?: string
+}
+
+const MAX_FILE_SIZE_MB = 50
+const MAX_FILES = 10
+
+export default function UploadPage() {
+  const router = useRouter()
+  const { guestName, setGuestName, isLoading: identityLoading, hasIdentity } = useGuestIdentity()
+  const [showNameModal, setShowNameModal] = useState(false)
+  const [uploads, setUploads] = useState<UploadStatus[]>([])
+  const [isUploading, setIsUploading] = useState(false)
+  const [isDragging, setIsDragging] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const { addMedia } = useMedia()
+
+  useEffect(() => {
+    if (!identityLoading && !hasIdentity) {
+      setShowNameModal(true)
+    }
+  }, [identityLoading, hasIdentity])
+
+  const handleNameSubmit = (name: string) => {
+    setGuestName(name)
+    setShowNameModal(false)
+  }
+
+  const updateUploadStatus = useCallback(
+    (index: number, updates: Partial<UploadStatus>) => {
+      setUploads((prev) =>
+        prev.map((upload, i) => (i === index ? { ...upload, ...updates } : upload))
+      )
+    },
+    []
+  )
+
+  const processFile = useCallback(
+    async (file: File, index: number, currentGuestName: string) => {
+      const supabase = createClient()
+
+      try {
+        updateUploadStatus(index, { status: "compressing", progress: 10 })
+
+        let fileToUpload: Blob = file
+        let width: number | undefined
+        let height: number | undefined
+        let thumbnailBlob: Blob | undefined
+
+        if (isImageFile(file)) {
+          const compressed = await compressImage(file)
+          fileToUpload = compressed.blob
+          width = compressed.width
+          height = compressed.height
+          thumbnailBlob = await generateThumbnail(file)
+        }
+
+        if (isVideoFile(file)) {
+          try {
+            thumbnailBlob = await generateVideoThumbnail(file)
+          } catch {
+            // Video thumbnail generation may fail on some browsers
+          }
+        }
+
+        updateUploadStatus(index, { progress: 30 })
+        updateUploadStatus(index, { status: "uploading", progress: 40 })
+
+        const timestamp = Date.now()
+        const ext = isVideoFile(file) ? "mp4" : "jpg"
+        const fileName = `${timestamp}-${Math.random().toString(36).substring(7)}.${ext}`
+        const filePath = `uploads/${fileName}`
+
+        const { error: uploadError } = await supabase.storage
+          .from("wedding-media")
+          .upload(filePath, fileToUpload, {
+            contentType: isVideoFile(file) ? file.type : "image/jpeg",
+            cacheControl: "3600",
+          })
+
+        if (uploadError) throw uploadError
+
+        updateUploadStatus(index, { progress: 70 })
+
+        let thumbnailPath: string | undefined
+        if (thumbnailBlob) {
+          const thumbFileName = `${timestamp}-thumb.jpg`
+          thumbnailPath = `thumbnails/${thumbFileName}`
+
+          await supabase.storage
+            .from("wedding-media")
+            .upload(thumbnailPath, thumbnailBlob, {
+              contentType: "image/jpeg",
+              cacheControl: "3600",
+            })
+        }
+
+        updateUploadStatus(index, { progress: 85 })
+
+        const { data: { publicUrl: fileUrl } } = supabase.storage
+          .from("wedding-media")
+          .getPublicUrl(filePath)
+
+        let thumbnailUrl: string | undefined
+        if (thumbnailPath) {
+          const { data: { publicUrl } } = supabase.storage
+            .from("wedding-media")
+            .getPublicUrl(thumbnailPath)
+          thumbnailUrl = publicUrl
+        }
+
+        const { data: mediaData, error: dbError } = await supabase
+          .from("media")
+          .insert({
+            file_url: fileUrl,
+            thumbnail_url: thumbnailUrl,
+            media_type: getMediaType(file),
+            uploaded_by: currentGuestName,
+            file_size: fileToUpload.size,
+            width,
+            height,
+          })
+          .select()
+          .single()
+
+        if (dbError) throw dbError
+
+        if (mediaData) {
+          addMedia(mediaData)
+        }
+
+        updateUploadStatus(index, { status: "complete", progress: 100 })
+      } catch (error) {
+        updateUploadStatus(index, {
+          status: "error",
+          error: error instanceof Error ? error.message : "Upload failed",
+        })
+      }
+    },
+    [updateUploadStatus, addMedia]
+  )
+
+  const processFiles = useCallback(
+    async (files: File[]) => {
+      if (!guestName) return
+      
+      const validFiles = files.filter((file) => {
+        if (!isImageFile(file) && !isVideoFile(file)) return false
+        if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) return false
+        return true
+      }).slice(0, MAX_FILES)
+
+      if (validFiles.length === 0) {
+        alert("No valid files selected. Please choose images or videos under 50MB.")
+        return
+      }
+
+      const newUploads: UploadStatus[] = validFiles.map((file) => ({
+        file,
+        preview: URL.createObjectURL(file),
+        progress: 0,
+        status: "pending" as const,
+      }))
+
+      setUploads((prev) => [...prev, ...newUploads])
+      setIsUploading(true)
+
+      const startIndex = uploads.length
+      for (let i = 0; i < validFiles.length; i++) {
+        await processFile(validFiles[i], startIndex + i, guestName)
+      }
+
+      setIsUploading(false)
+    },
+    [guestName, processFile, uploads.length]
+  )
+
+  const handleFileSelect = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const files = Array.from(e.target.files || [])
+      processFiles(files)
+      if (fileInputRef.current) fileInputRef.current.value = ""
+    },
+    [processFiles]
+  )
+
+  const handleDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault()
+      setIsDragging(false)
+      const files = Array.from(e.dataTransfer.files)
+      processFiles(files)
+    },
+    [processFiles]
+  )
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragging(true)
+  }
+
+  const handleDragLeave = () => {
+    setIsDragging(false)
+  }
+
+  const removeUpload = (index: number) => {
+    setUploads((prev) => {
+      const removed = prev[index]
+      URL.revokeObjectURL(removed.preview)
+      return prev.filter((_, i) => i !== index)
+    })
+  }
+
+  const completedCount = uploads.filter((u) => u.status === "complete").length
+  const allComplete = uploads.length > 0 && completedCount === uploads.length
+
+  if (identityLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+      </div>
+    )
+  }
+
+  return (
+    <div className="min-h-screen bg-background">
+      {/* Header */}
+      <header className="sticky top-0 z-40 border-b border-border/50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="container mx-auto flex h-16 items-center justify-between px-4">
+          <Link
+            href="/"
+            className="flex items-center gap-2 text-muted-foreground transition-colors hover:text-foreground"
+          >
+            <ArrowLeft className="h-5 w-5" />
+            <span className="font-medium">Back</span>
+          </Link>
+          
+          <span className="font-serif text-lg font-semibold text-foreground">
+            Upload Photos
+          </span>
+          
+          <div className="w-16" />
+        </div>
+      </header>
+
+      <main className="container mx-auto max-w-2xl px-4 py-8">
+        {/* User Info */}
+        {guestName && (
+          <div className="mb-6 rounded-xl bg-card p-4 text-center">
+            <p className="text-sm text-muted-foreground">Uploading as</p>
+            <p className="font-serif text-xl font-semibold text-foreground">{guestName}</p>
+          </div>
+        )}
+
+        {/* Drop Zone */}
+        <div
+          onDrop={handleDrop}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          className={`relative rounded-2xl border-2 border-dashed transition-all ${
+            isDragging
+              ? "border-primary bg-primary/5"
+              : "border-border hover:border-primary/50 hover:bg-muted/50"
+          }`}
+        >
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*,video/*"
+            multiple
+            onChange={handleFileSelect}
+            className="absolute inset-0 cursor-pointer opacity-0"
+            disabled={!hasIdentity || isUploading}
+          />
+          
+          <div className="flex flex-col items-center justify-center py-16 text-center">
+            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
+              <ImagePlus className="h-8 w-8 text-primary" />
+            </div>
+            <h3 className="font-serif text-xl font-semibold text-foreground">
+              {isDragging ? "Drop files here" : "Add Photos & Videos"}
+            </h3>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Drag and drop or click to select
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Up to {MAX_FILES} files, max {MAX_FILE_SIZE_MB}MB each
+            </p>
+          </div>
+        </div>
+
+        {/* Upload Queue */}
+        {uploads.length > 0 && (
+          <div className="mt-8">
+            <div className="mb-4 flex items-center justify-between">
+              <h3 className="font-serif text-lg font-semibold text-foreground">
+                {allComplete ? "Upload Complete" : "Uploading..."}
+              </h3>
+              <span className="text-sm text-muted-foreground">
+                {completedCount} of {uploads.length} complete
+              </span>
+            </div>
+            
+            <div className="space-y-3">
+              {uploads.map((upload, index) => (
+                <UploadItem
+                  key={index}
+                  upload={upload}
+                  onRemove={() => removeUpload(index)}
+                />
+              ))}
+            </div>
+
+            {allComplete && (
+              <Button
+                onClick={() => router.push("/")}
+                className="mt-6 w-full"
+                size="lg"
+              >
+                View Gallery
+              </Button>
+            )}
+          </div>
+        )}
+      </main>
+
+      {showNameModal && (
+        <GuestNameModal onSubmit={handleNameSubmit} />
+      )}
+    </div>
+  )
+}
+
+function UploadItem({
+  upload,
+  onRemove,
+}: {
+  upload: UploadStatus
+  onRemove: () => void
+}) {
+  const statusIcons = {
+    pending: <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />,
+    compressing: <Loader2 className="h-4 w-4 animate-spin text-primary" />,
+    uploading: <Upload className="h-4 w-4 text-primary animate-pulse" />,
+    complete: <CheckCircle2 className="h-4 w-4 text-green-600" />,
+    error: <AlertCircle className="h-4 w-4 text-destructive" />,
+  }
+
+  const statusLabels = {
+    pending: "Waiting...",
+    compressing: "Compressing...",
+    uploading: "Uploading...",
+    complete: "Complete",
+    error: upload.error || "Error",
+  }
+
+  const canRemove = upload.status === "complete" || upload.status === "error"
+
+  return (
+    <div className="flex items-center gap-4 rounded-xl bg-card p-3">
+      {/* Preview */}
+      <div className="relative h-14 w-14 flex-shrink-0 overflow-hidden rounded-lg bg-muted">
+        <img
+          src={upload.preview}
+          alt=""
+          className="h-full w-full object-cover"
+        />
+      </div>
+
+      {/* Info */}
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium truncate text-foreground">
+          {upload.file.name}
+        </p>
+        <div className="flex items-center gap-2 mt-1">
+          {statusIcons[upload.status]}
+          <span className="text-xs text-muted-foreground">
+            {statusLabels[upload.status]}
+          </span>
+        </div>
+        {upload.status !== "complete" && upload.status !== "error" && (
+          <Progress value={upload.progress} className="h-1 mt-2" />
+        )}
+      </div>
+
+      {/* Remove Button */}
+      {canRemove && (
+        <button
+          onClick={onRemove}
+          className="flex-shrink-0 p-1 text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <X className="h-4 w-4" />
+        </button>
+      )}
+    </div>
+  )
+}

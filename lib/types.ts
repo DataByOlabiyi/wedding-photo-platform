@@ -1,13 +1,13 @@
 export type MediaItem = {
   id: string
-  client_id: string
-  url: string
-  thumbnail_url: string
-  guest_id: string
-  guest_name: string
-  guest_tag?: string | null
-  caption?: string | null
-  created_at: string
+  file_url: string
+  thumbnail_url: string | null
+  media_type: "image" | "video"
+  uploaded_by: string
+  file_size: number | null
+  width: number | null
+  height: number | null
+  uploaded_at: string
 }
 
 export type GuestIdentity = {
@@ -32,7 +32,7 @@ export type UploadQueueItem = {
   guestName: string
   guestTag?: string
   caption?: string
-  status: 'pending' | 'uploading' | 'success' | 'error'
+  status: "pending" | "uploading" | "success" | "error"
   progress: number
   error?: string
 }
