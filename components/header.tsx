@@ -1,8 +1,9 @@
 "use client"
 
 import Link from "next/link"
-import { Camera, Plus } from "lucide-react"
+import { Camera, Plus, Lock } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { ThemeToggle } from "@/components/theme-toggle"
 
 interface HeaderProps {
   hideUploadButton?: boolean
@@ -26,17 +27,32 @@ export function Header({ hideUploadButton }: HeaderProps) {
           </div>
         </Link>
         
-        {!hideUploadButton && (
-          <Link href="/upload">
+        <div className="flex items-center gap-2">
+          {!hideUploadButton && (
+            <Link href="/upload">
+              <Button 
+                size="sm" 
+                className="gap-2 rounded-full bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/25 transition-all hover:shadow-xl hover:shadow-primary/30"
+              >
+                <Plus className="h-4 w-4" />
+                <span className="hidden sm:inline">Add Photos</span>
+              </Button>
+            </Link>
+          )}
+          
+          <ThemeToggle />
+          
+          <Link href="/admin/login">
             <Button 
               size="sm" 
-              className="gap-2 rounded-full bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/25 transition-all hover:shadow-xl hover:shadow-primary/30"
+              variant="outline"
+              className="gap-2"
             >
-              <Plus className="h-4 w-4" />
-              <span className="hidden sm:inline">Add Photos</span>
+              <Lock className="h-4 w-4" />
+              <span className="hidden sm:inline">Admin</span>
             </Button>
           </Link>
-        )}
+        </div>
       </div>
     </header>
   )
