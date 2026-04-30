@@ -117,12 +117,15 @@ export function MediaLightbox({
       {/* Media content */}
       <div className="relative flex h-full w-full items-center justify-center p-4 sm:p-16">
         {isVideo ? (
-          <video
-            src={media.file_url}
-            controls
-            autoPlay
-            className="max-h-full max-w-full rounded-lg"
-          />
+          <div className="relative w-full max-w-2xl">
+            <video
+              src={media.file_url}
+              controls
+              autoPlay
+              muted
+              className="w-full h-auto rounded-lg max-h-[70vh]"
+            />
+          </div>
         ) : (
           <div className="relative h-full w-full">
             <Image

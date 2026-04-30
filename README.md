@@ -1,35 +1,169 @@
-# wedding-photo-platform
+# BM Wedding Photo - Complete Implementation
 
-This is a [Next.js](https://nextjs.org) project bootstrapped with [v0](https://v0.app).
+A full-stack wedding photo sharing platform built with Next.js 16, React 19, Supabase, and TypeScript. Guests can upload photos, couples get admin dashboard, and everything is secure with proper authentication and rate limiting.
 
-## Built with v0
+## Features
 
-This repository is linked to a [v0](https://v0.app) project. You can continue developing by visiting the link below -- start new chats to make changes, and v0 will push commits directly to this repo. Every merge to `main` will automatically deploy.
+### Core Features
+- **Guest Photo Upload** - Simple 2-step flow: enter name/tag → upload files
+- **Photo Gallery** - Browse photos organized by guest with beautiful lightbox viewer
+- **Admin Dashboard** - Manage all photos, delete, download, generate QR codes
+- **PWA Support** - Install as app on mobile, works offline
+- **Real-time Updates** - Photos appear instantly via Supabase Realtime
 
-[Continue working on v0 →](https://v0.app/chat/projects/prj_d5zm7s8XgobxrBoPnWPKSB1Gbe5T)
+### Security (Implemented)
+- ✅ Server-side admin authentication with httpOnly JWT cookies
+- ✅ RLS policies prevent public deletion
+- ✅ IP-based upload rate limiting (30 files/hour)
+- ✅ Guest self-delete window (30 minutes after upload)
+- ✅ EXIF data stripping for privacy
 
-## Getting Started
+### Advanced Features (Implemented)
+- ✅ QR code generator for easy guest access
+- ✅ Download all photos as ZIP file
+- ✅ Shareable read-only gallery link
+- ✅ Featured photos rotating slideshow on home
+- ✅ Email notifications when guests upload
+- ✅ Upload progress tracking
+- ✅ Success screen with redirect to own photos
+- ✅ Improved video playback with autoplay (muted)
+- ✅ Pagination for better performance
+- ✅ Duplicate photo detection via SHA-256 hashing
+- ✅ Dark mode toggle
 
-First, run the development server:
+## Quick Start
 
+### Prerequisites
+- Node.js 18+
+- Supabase account (free tier works)
+- Resend account (for email notifications)
+
+### Environment Setup
+
+1. **Install dependencies**
+   ```bash
+   npm install
+   ```
+
+2. **Create `.env.local` file:**
+   ```env
+   # Supabase
+   NEXT_PUBLIC_SUPABASE_URL=your-supabase-url
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+   SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+
+   # Admin & Security
+   ADMIN_PASSWORD=your-secure-password
+   JWT_SECRET=your-jwt-secret-key
+
+   # Features
+   NEXT_PUBLIC_GALLERY_TOKEN=your-unique-token
+   RESEND_API_KEY=your-resend-api-key
+   COUPLE_EMAIL=couple@example.com
+   NEXT_PUBLIC_URL=http://localhost:3000
+
+   # Rate Limiting (optional)
+   UPSTASH_REDIS_REST_URL=your-upstash-url
+   UPSTASH_REDIS_REST_TOKEN=your-upstash-token
+   ```
+
+3. **Run database migrations** in Supabase SQL editor:
+   - `scripts/001_create_media_table.sql`
+   - `scripts/002_create_storage_bucket.sql`
+   - `scripts/003_fix_media_schema.sql`
+   - `scripts/004_add_guest_tag.sql`
+   - `scripts/005_fix_rls_policies.sql`
+
+4. **Start development server:**
+   ```bash
+   npm run dev
+   ```
+
+5. **Open browser:** http://localhost:3000
+
+## Routes
+
+| Route | Purpose | Auth |
+|-------|---------|------|
+| `/` | Home gallery with guest albums | Public |
+| `/upload` | Upload photos (2-step form) | Public |
+| `/guest/[guestId]` | View photos from specific guest | Public |
+| `/gallery/[token]` | Shareable read-only gallery | Token |
+| `/admin` | Dashboard to manage all photos | Admin |
+| `/admin/login` | Admin login page | Public |
+| `/admin/qr` | Generate/download QR code | Admin |
+
+## Usage
+
+### For Guests
+1. Visit the site or scan QR code
+2. Click "Add Photos" or "+" button
+3. Enter your name and select relationship tag
+4. Upload up to 10 files (50MB each)
+5. Photos are compressed and appear in gallery instantly
+6. Can delete own photos within 30 minutes
+
+### For Couples (Admin)
+1. Go to `/admin`
+2. Login with your admin password
+3. View all photos, stats, and guest uploads
+4. Delete unwanted photos
+5. Generate QR code for printing/sharing
+6. Download all photos as ZIP file
+7. Get email notifications when guests upload
+
+## Technology Stack
+
+- **Frontend**: Next.js 16, React 19, TypeScript, Tailwind CSS 4
+- **Backend**: Supabase PostgreSQL, Object Storage, Realtime
+- **Authentication**: Server-side JWT with httpOnly cookies
+- **Email**: Resend API
+- **Rate Limiting**: Upstash Redis (optional)
+- **Hosting**: Vercel
+
+## Security
+
+### Authentication
+- Admin password validated server-side (never exposed to client)
+- JWT tokens signed with secret key
+- Tokens stored in httpOnly cookies (inaccessible to JavaScript)
+- Tokens expire after 24 hours
+
+### Authorization
+- RLS policies prevent public deletion
+- Guest self-delete limited to 30-minute window
+- Admin operations use service role (bypass RLS)
+- Rate limiting prevents abuse (30 files/hour per IP)
+
+## Deployment
+
+### Deploy to Vercel
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
+vercel deploy
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Environment Variables
+Set all `.env.local` variables in Vercel project settings.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Documentation
 
-## Learn More
+See `IMPLEMENTATION_SUMMARY.md` for detailed information about:
+- All implemented features
+- Database schema
+- API routes and server actions
+- Security implementation
+- Performance optimizations
+- Testing checklist
 
-To learn more, take a look at the following resources:
+## Support
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-- [v0 Documentation](https://v0.app/docs) - learn about v0 and how to use it.
+For issues or questions:
+1. Check `IMPLEMENTATION_SUMMARY.md` for detailed info
+2. Review database schema in Supabase
+3. Check browser console for errors
+4. Review Vercel logs for server errors
 
-<a href="https://v0.app/chat/api/kiro/clone/DataByOlabiyi/wedding-photo-platform" alt="Open in Kiro"><img src="https://pdgvvgmkdvyeydso.public.blob.vercel-storage.com/open%20in%20kiro.svg?sanitize=true" /></a>
+---
+
+**Built with Next.js 16 & Supabase**
+**Last Updated:** April 30, 2026

@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Trash2, Download, Image as ImageIcon, Video, Loader2, ArrowLeft, LogOut } from "lucide-react"
+import { Trash2, Download, Image as ImageIcon, Video, Loader2, ArrowLeft, LogOut, QrCode } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
@@ -105,6 +105,12 @@ export default function AdminPage() {
             <h1 className="font-serif text-xl font-semibold">Admin Dashboard</h1>
           </div>
           <div className="flex items-center gap-2">
+            <Link href="/admin/qr">
+              <Button variant="outline" className="gap-2">
+                <QrCode className="h-4 w-4" />
+                <span className="hidden sm:inline">QR Code</span>
+              </Button>
+            </Link>
             <Button onClick={handleDownloadAll} variant="outline" className="gap-2">
               <Download className="h-4 w-4" />
               <span className="hidden sm:inline">Download All</span>
