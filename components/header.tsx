@@ -4,7 +4,11 @@ import Link from "next/link"
 import { Camera, Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
-export function Header() {
+interface HeaderProps {
+  hideUploadButton?: boolean
+}
+
+export function Header({ hideUploadButton }: HeaderProps) {
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/80 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60">
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
@@ -22,15 +26,17 @@ export function Header() {
           </div>
         </Link>
         
-        <Link href="/upload">
-          <Button 
-            size="sm" 
-            className="gap-2 rounded-full bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/25 transition-all hover:shadow-xl hover:shadow-primary/30"
-          >
-            <Plus className="h-4 w-4" />
-            <span className="hidden sm:inline">Add Photos</span>
-          </Button>
-        </Link>
+        {!hideUploadButton && (
+          <Link href="/upload">
+            <Button 
+              size="sm" 
+              className="gap-2 rounded-full bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/25 transition-all hover:shadow-xl hover:shadow-primary/30"
+            >
+              <Plus className="h-4 w-4" />
+              <span className="hidden sm:inline">Add Photos</span>
+            </Button>
+          </Link>
+        )}
       </div>
     </header>
   )

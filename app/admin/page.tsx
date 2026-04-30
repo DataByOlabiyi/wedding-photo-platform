@@ -1,10 +1,9 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Trash2, Download, Image as ImageIcon, Video, Loader2, ArrowLeft, LogIn } from "lucide-react"
+import { Trash2, Download, Image as ImageIcon, Video, Loader2, ArrowLeft, LogOut, QrCode } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -17,44 +16,21 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { createClient } from "@/lib/supabase/client"
+import { deleteMedia } from "@/app/actions/admin-delete"
 import type { MediaItem } from "@/lib/types"
 import Image from "next/image"
 import Link from "next/link"
-
-const ADMIN_PASSWORD = process.env.NEXT_PUBLIC_ADMIN_PASSWORD || "admin123"
+import { useRouter } from "next/navigation"
 
 export default function AdminPage() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
-  const [password, setPassword] = useState("")
-  const [error, setError] = useState("")
+  const router = useRouter()
   const [media, setMedia] = useState<MediaItem[]>([])
-  const [isLoading, setIsLoading] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
   const [deletingId, setDeletingId] = useState<string | null>(null)
 
   useEffect(() => {
-    // Check if already authenticated
-    const auth = sessionStorage.getItem("bm_admin_auth")
-    if (auth === "true") {
-      setIsAuthenticated(true)
-    }
+    fetchMedia()
   }, [])
-
-  useEffect(() => {
-    if (isAuthenticated) {
-      fetchMedia()
-    }
-  }, [isAuthenticated])
-
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (password === ADMIN_PASSWORD) {
-      setIsAuthenticated(true)
-      sessionStorage.setItem("bm_admin_auth", "true")
-      setError("")
-    } else {
-      setError("Incorrect password")
-    }
-  }
 
   const fetchMedia = async () => {
     setIsLoading(true)
@@ -72,33 +48,23 @@ export default function AdminPage() {
 
   const handleDelete = async (item: MediaItem) => {
     setDeletingId(item.id)
-    const supabase = createClient()
-
-    try {
-      // Extract file paths from URLs
-      const fileUrl = new URL(item.file_url)
-      const filePath = fileUrl.pathname.split("/").slice(-2).join("/")
-
-      // Delete from storage
-      await supabase.storage.from("wedding-media").remove([filePath])
-
-      // Delete thumbnail if exists
-      if (item.thumbnail_url) {
-        const thumbUrl = new URL(item.thumbnail_url)
-        const thumbPath = thumbUrl.pathname.split("/").slice(-2).join("/")
-        await supabase.storage.from("wedding-media").remove([thumbPath])
-      }
-
-      // Delete from database
-      await supabase.from("media").delete().eq("id", item.id)
-
+    
+    const result = await deleteMedia(item.id)
+    
+    if (result.success) {
       // Update local state
       setMedia((prev) => prev.filter((m) => m.id !== item.id))
-    } catch (error) {
-      console.error("Delete failed:", error)
+    } else {
+      console.error("Delete failed:", result.error)
+      alert(`Failed to delete: ${result.error}`)
     }
 
     setDeletingId(null)
+  }
+
+  const handleLogout = async () => {
+    await fetch('/api/admin/logout', { method: 'POST' })
+    router.push('/')
   }
 
   const handleDownloadAll = async () => {
@@ -123,43 +89,7 @@ export default function AdminPage() {
     }
   }
 
-  if (!isAuthenticated) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background p-4">
-        <Card className="w-full max-w-md">
-          <CardHeader className="text-center">
-            <CardTitle className="font-serif text-2xl">Admin Access</CardTitle>
-            <CardDescription>
-              Enter the admin password to manage wedding photos
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleLogin} className="space-y-4">
-              <Input
-                type="password"
-                placeholder="Password"
-                value={password}
-                onChange={(e) => {
-                  setPassword(e.target.value)
-                  setError("")
-                }}
-                className="text-center"
-              />
-              {error && (
-                <p className="text-sm text-destructive text-center">{error}</p>
-              )}
-              <Button type="submit" className="w-full gap-2">
-                <LogIn className="h-4 w-4" />
-                Login
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
-      </div>
-    )
-  }
-
-  const photoCount = media.filter((m) => m.media_type === "photo").length
+  const photoCount = media.filter((m) => m.media_type === "image").length
   const videoCount = media.filter((m) => m.media_type === "video").length
 
   return (
@@ -174,10 +104,21 @@ export default function AdminPage() {
             </Link>
             <h1 className="font-serif text-xl font-semibold">Admin Dashboard</h1>
           </div>
-          <Button onClick={handleDownloadAll} variant="outline" className="gap-2">
-            <Download className="h-4 w-4" />
-            <span className="hidden sm:inline">Download All</span>
-          </Button>
+          <div className="flex items-center gap-2">
+            <Link href="/admin/qr">
+              <Button variant="outline" className="gap-2">
+                <QrCode className="h-4 w-4" />
+                <span className="hidden sm:inline">QR Code</span>
+              </Button>
+            </Link>
+            <Button onClick={handleDownloadAll} variant="outline" className="gap-2">
+              <Download className="h-4 w-4" />
+              <span className="hidden sm:inline">Download All</span>
+            </Button>
+            <Button onClick={handleLogout} variant="ghost" size="icon" title="Logout">
+              <LogOut className="h-5 w-5" />
+            </Button>
+          </div>
         </div>
       </header>
 
