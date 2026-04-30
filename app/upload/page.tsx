@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef, useCallback, useEffect } from "react"
+import { useState, useRef, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import {
@@ -14,11 +14,14 @@ import {
   X,
   Heart,
   Sparkles,
+  User,
+  Tag,
+  ArrowRight,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import { Progress } from "@/components/ui/progress"
-import { useGuestIdentity } from "@/hooks/use-guest-identity"
-import { GuestNameModal } from "@/components/guest-name-modal"
 import { createClient } from "@/lib/supabase/client"
 import {
   compressImage,
@@ -29,6 +32,7 @@ import {
   getMediaType,
 } from "@/lib/image-compression"
 import { useMedia } from "@/lib/media-context"
+import { GUEST_TAGS, type GuestTag } from "@/lib/types"
 
 interface UploadStatus {
   file: File
@@ -43,23 +47,20 @@ const MAX_FILES = 10
 
 export default function UploadPage() {
   const router = useRouter()
-  const { guestName, setGuestName, isLoading: identityLoading, hasIdentity } = useGuestIdentity()
-  const [showNameModal, setShowNameModal] = useState(false)
+  const [step, setStep] = useState<"info" | "upload">("info")
+  const [guestName, setGuestName] = useState("")
+  const [guestTag, setGuestTag] = useState<GuestTag | "">("")
   const [uploads, setUploads] = useState<UploadStatus[]>([])
   const [isUploading, setIsUploading] = useState(false)
   const [isDragging, setIsDragging] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const { addMedia } = useMedia()
 
-  useEffect(() => {
-    if (!identityLoading && !hasIdentity) {
-      setShowNameModal(true)
+  const handleInfoSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (guestName.trim()) {
+      setStep("upload")
     }
-  }, [identityLoading, hasIdentity])
-
-  const handleNameSubmit = (name: string) => {
-    setGuestName(name)
-    setShowNameModal(false)
   }
 
   const updateUploadStatus = useCallback(
@@ -72,7 +73,7 @@ export default function UploadPage() {
   )
 
   const processFile = useCallback(
-    async (file: File, index: number, currentGuestName: string) => {
+    async (file: File, index: number) => {
       const supabase = createClient()
 
       try {
@@ -151,7 +152,8 @@ export default function UploadPage() {
             file_url: fileUrl,
             thumbnail_url: thumbnailUrl,
             media_type: getMediaType(file),
-            uploaded_by: currentGuestName,
+            uploaded_by: guestName.trim(),
+            guest_tag: guestTag || null,
             file_size: fileToUpload.size,
             width,
             height,
@@ -173,13 +175,11 @@ export default function UploadPage() {
         })
       }
     },
-    [updateUploadStatus, addMedia]
+    [updateUploadStatus, addMedia, guestName, guestTag]
   )
 
   const processFiles = useCallback(
     async (files: File[]) => {
-      if (!guestName) return
-      
       const validFiles = files.filter((file) => {
         if (!isImageFile(file) && !isVideoFile(file)) return false
         if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) return false
@@ -203,12 +203,12 @@ export default function UploadPage() {
 
       const startIndex = uploads.length
       for (let i = 0; i < validFiles.length; i++) {
-        await processFile(validFiles[i], startIndex + i, guestName)
+        await processFile(validFiles[i], startIndex + i)
       }
 
       setIsUploading(false)
     },
-    [guestName, processFile, uploads.length]
+    [processFile, uploads.length]
   )
 
   const handleFileSelect = useCallback(
@@ -250,14 +250,6 @@ export default function UploadPage() {
   const completedCount = uploads.filter((u) => u.status === "complete").length
   const allComplete = uploads.length > 0 && completedCount === uploads.length
 
-  if (identityLoading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
-        <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-      </div>
-    )
-  }
-
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -283,122 +275,204 @@ export default function UploadPage() {
       </header>
 
       <main className="container mx-auto max-w-2xl px-4 py-8">
-        {/* Hero Section */}
-        <div className="mb-8 text-center">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
-            <Heart className="h-8 w-8 text-primary" />
-          </div>
-          <h1 className="font-serif text-3xl font-semibold text-foreground">
-            Share Your Memories
-          </h1>
-          <p className="mt-2 text-muted-foreground">
-            Help us capture every beautiful moment
-          </p>
-        </div>
+        {/* Step 1: Guest Info */}
+        {step === "info" && (
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+            {/* Hero Section */}
+            <div className="mb-8 text-center">
+              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
+                <Heart className="h-8 w-8 text-primary" />
+              </div>
+              <h1 className="font-serif text-3xl font-semibold text-foreground">
+                Share Your Memories
+              </h1>
+              <p className="mt-2 text-muted-foreground">
+                Tell us a bit about yourself first
+              </p>
+            </div>
 
-        {/* User Info */}
-        {guestName && (
-          <div className="mb-6 flex items-center justify-center gap-3 rounded-2xl bg-card p-4 ring-1 ring-border/50">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 font-semibold text-primary">
-              {guestName.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)}
-            </div>
-            <div className="text-left">
-              <p className="text-xs text-muted-foreground">Uploading as</p>
-              <p className="font-medium text-foreground">{guestName}</p>
-            </div>
+            {/* Info Form */}
+            <form onSubmit={handleInfoSubmit} className="space-y-6">
+              {/* Name Input */}
+              <div className="space-y-2">
+                <Label htmlFor="name" className="flex items-center gap-2 text-sm font-medium">
+                  <User className="h-4 w-4 text-muted-foreground" />
+                  Your Name
+                </Label>
+                <Input
+                  id="name"
+                  type="text"
+                  placeholder="Enter your full name"
+                  value={guestName}
+                  onChange={(e) => setGuestName(e.target.value)}
+                  className="h-12 rounded-xl border-border bg-card text-base"
+                  required
+                />
+              </div>
+
+              {/* Tag Selection */}
+              <div className="space-y-3">
+                <Label className="flex items-center gap-2 text-sm font-medium">
+                  <Tag className="h-4 w-4 text-muted-foreground" />
+                  How do you know the couple?
+                </Label>
+                <div className="grid grid-cols-2 gap-3">
+                  {GUEST_TAGS.map((tag) => (
+                    <button
+                      key={tag}
+                      type="button"
+                      onClick={() => setGuestTag(tag)}
+                      className={`flex items-center justify-center rounded-xl border-2 px-4 py-3 text-sm font-medium transition-all ${
+                        guestTag === tag
+                          ? "border-primary bg-primary/10 text-primary"
+                          : "border-border bg-card text-foreground hover:border-primary/50 hover:bg-muted/50"
+                      }`}
+                    >
+                      {tag}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Continue Button */}
+              <Button
+                type="submit"
+                disabled={!guestName.trim()}
+                className="w-full gap-2 rounded-full h-12 text-base"
+                size="lg"
+              >
+                Continue to Upload
+                <ArrowRight className="h-4 w-4" />
+              </Button>
+            </form>
           </div>
         )}
 
-        {/* Drop Zone */}
-        <div
-          onDrop={handleDrop}
-          onDragOver={handleDragOver}
-          onDragLeave={handleDragLeave}
-          className={`relative cursor-pointer overflow-hidden rounded-3xl border-2 border-dashed transition-all duration-300 ${
-            isDragging
-              ? "border-primary bg-primary/5 scale-[1.02]"
-              : "border-border hover:border-primary/50 hover:bg-muted/30"
-          }`}
-        >
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*,video/*"
-            multiple
-            onChange={handleFileSelect}
-            className="absolute inset-0 cursor-pointer opacity-0"
-            disabled={!hasIdentity || isUploading}
-          />
-          
-          <div className="flex flex-col items-center justify-center py-16 text-center">
-            <div className={`mb-4 flex h-20 w-20 items-center justify-center rounded-full transition-all duration-300 ${
-              isDragging ? "bg-primary/20 scale-110" : "bg-primary/10"
-            }`}>
-              <ImagePlus className={`h-10 w-10 transition-colors ${
-                isDragging ? "text-primary" : "text-primary/70"
-              }`} />
-            </div>
-            <h3 className="font-serif text-xl font-semibold text-foreground">
-              {isDragging ? "Drop to upload" : "Add Photos & Videos"}
-            </h3>
-            <p className="mt-2 text-sm text-muted-foreground">
-              Drag and drop or tap to select
-            </p>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Up to {MAX_FILES} files, max {MAX_FILE_SIZE_MB}MB each
-            </p>
-          </div>
-        </div>
-
-        {/* Upload Queue */}
-        {uploads.length > 0 && (
-          <div className="mt-8">
-            <div className="mb-4 flex items-center justify-between">
-              <h3 className="flex items-center gap-2 font-serif text-lg font-semibold text-foreground">
-                {allComplete && <Sparkles className="h-5 w-5 text-primary" />}
-                {allComplete ? "Upload Complete!" : "Uploading..."}
-              </h3>
-              <span className="rounded-full bg-primary/10 px-3 py-1 text-sm font-medium text-primary">
-                {completedCount} / {uploads.length}
-              </span>
-            </div>
-            
-            <div className="space-y-3">
-              {uploads.map((upload, index) => (
-                <UploadItem
-                  key={index}
-                  upload={upload}
-                  onRemove={() => removeUpload(index)}
-                />
-              ))}
+        {/* Step 2: Upload */}
+        {step === "upload" && (
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+            {/* Hero Section */}
+            <div className="mb-8 text-center">
+              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
+                <ImagePlus className="h-8 w-8 text-primary" />
+              </div>
+              <h1 className="font-serif text-3xl font-semibold text-foreground">
+                Upload Your Photos
+              </h1>
+              <p className="mt-2 text-muted-foreground">
+                Help us capture every beautiful moment
+              </p>
             </div>
 
-            {allComplete && (
-              <div className="mt-8 space-y-3">
-                <Button
-                  onClick={() => router.push("/")}
-                  className="w-full rounded-full"
-                  size="lg"
-                >
-                  View Gallery
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => setUploads([])}
-                  className="w-full rounded-full"
-                  size="lg"
-                >
-                  Upload More
-                </Button>
+            {/* User Info */}
+            <div className="mb-6 flex items-center justify-between gap-3 rounded-2xl bg-card p-4 ring-1 ring-border/50">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 font-semibold text-primary">
+                  {guestName.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)}
+                </div>
+                <div className="text-left">
+                  <p className="font-medium text-foreground">{guestName}</p>
+                  {guestTag && (
+                    <p className="text-xs text-muted-foreground">{guestTag}</p>
+                  )}
+                </div>
+              </div>
+              <button
+                onClick={() => setStep("info")}
+                className="text-sm text-primary hover:underline"
+              >
+                Change
+              </button>
+            </div>
+
+            {/* Drop Zone */}
+            <div
+              onDrop={handleDrop}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              className={`relative cursor-pointer overflow-hidden rounded-3xl border-2 border-dashed transition-all duration-300 ${
+                isDragging
+                  ? "border-primary bg-primary/5 scale-[1.02]"
+                  : "border-border hover:border-primary/50 hover:bg-muted/30"
+              }`}
+            >
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*,video/*"
+                multiple
+                onChange={handleFileSelect}
+                className="absolute inset-0 cursor-pointer opacity-0"
+                disabled={isUploading}
+              />
+              
+              <div className="flex flex-col items-center justify-center py-16 text-center">
+                <div className={`mb-4 flex h-20 w-20 items-center justify-center rounded-full transition-all duration-300 ${
+                  isDragging ? "bg-primary/20 scale-110" : "bg-primary/10"
+                }`}>
+                  <Upload className={`h-10 w-10 transition-colors ${
+                    isDragging ? "text-primary" : "text-primary/70"
+                  }`} />
+                </div>
+                <h3 className="font-serif text-xl font-semibold text-foreground">
+                  {isDragging ? "Drop to upload" : "Add Photos & Videos"}
+                </h3>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Drag and drop or tap to select
+                </p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Up to {MAX_FILES} files, max {MAX_FILE_SIZE_MB}MB each
+                </p>
+              </div>
+            </div>
+
+            {/* Upload Queue */}
+            {uploads.length > 0 && (
+              <div className="mt-8">
+                <div className="mb-4 flex items-center justify-between">
+                  <h3 className="flex items-center gap-2 font-serif text-lg font-semibold text-foreground">
+                    {allComplete && <Sparkles className="h-5 w-5 text-primary" />}
+                    {allComplete ? "Upload Complete!" : "Uploading..."}
+                  </h3>
+                  <span className="rounded-full bg-primary/10 px-3 py-1 text-sm font-medium text-primary">
+                    {completedCount} / {uploads.length}
+                  </span>
+                </div>
+                
+                <div className="space-y-3">
+                  {uploads.map((upload, index) => (
+                    <UploadItem
+                      key={index}
+                      upload={upload}
+                      onRemove={() => removeUpload(index)}
+                    />
+                  ))}
+                </div>
+
+                {allComplete && (
+                  <div className="mt-8 space-y-3">
+                    <Button
+                      onClick={() => router.push("/")}
+                      className="w-full rounded-full"
+                      size="lg"
+                    >
+                      View Gallery
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => setUploads([])}
+                      className="w-full rounded-full"
+                      size="lg"
+                    >
+                      Upload More
+                    </Button>
+                  </div>
+                )}
               </div>
             )}
           </div>
         )}
       </main>
-
-      {showNameModal && (
-        <GuestNameModal onSubmit={handleNameSubmit} />
-      )}
     </div>
   )
 }

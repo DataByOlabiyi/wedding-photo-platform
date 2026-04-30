@@ -4,6 +4,7 @@ export type MediaItem = {
   thumbnail_url: string | null
   media_type: "image" | "video"
   uploaded_by: string
+  guest_tag: string | null
   file_size: number | null
   width: number | null
   height: number | null
@@ -36,3 +37,15 @@ export type UploadQueueItem = {
   progress: number
   error?: string
 }
+
+export const GUEST_TAGS = [
+  "Bride's Friend",
+  "Bride's Family",
+  "Groom's Friend",
+  "Groom's Family",
+  "Colleague",
+  "Neighbor",
+  "Other",
+] as const
+
+export type GuestTag = (typeof GUEST_TAGS)[number]

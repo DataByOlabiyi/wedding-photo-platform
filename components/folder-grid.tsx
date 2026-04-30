@@ -29,13 +29,17 @@ export function FolderGrid() {
         if (itemDate > existingDate) {
           existing.coverImage = item.thumbnail_url || item.file_url
           existing.lastUpdated = item.uploaded_at
+          // Update guest tag if available
+          if (item.guest_tag) {
+            existing.guestTag = item.guest_tag
+          }
         }
       } else {
         // Create new folder entry
         folderMap.set(guestId, {
           guestId,
           guestName: item.uploaded_by,
-          guestTag: undefined,
+          guestTag: item.guest_tag || undefined,
           photoCount: 1,
           coverImage: item.thumbnail_url || item.file_url,
           lastUpdated: item.uploaded_at,
