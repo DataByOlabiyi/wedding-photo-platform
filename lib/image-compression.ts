@@ -12,6 +12,19 @@ const DEFAULT_OPTIONS: CompressionOptions = {
   maxSizeMB: 4,
 }
 
+/**
+ * Compresses images and automatically strips EXIF metadata for privacy
+ * 
+ * The canvas redraw process inherently removes all EXIF data:
+ * - GPS coordinates
+ * - Camera model and settings
+ * - Timestamps and dates
+ * - Lens information
+ * - Any other metadata stored in the image
+ * 
+ * This ensures user privacy by removing location and device information
+ * before uploading to the server.
+ */
 export async function compressImage(
   file: File,
   options: CompressionOptions = {}

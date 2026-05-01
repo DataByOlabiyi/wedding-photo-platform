@@ -31,8 +31,11 @@ import {
   isVideoFile,
   getMediaType,
 } from "@/lib/image-compression"
+import { generateImageHash, isDuplicateImage } from "@/lib/image-hash"
 import { useMedia } from "@/lib/media-context"
 import { GUEST_TAGS, type GuestTag } from "@/lib/types"
+import { UploadSuccess } from "@/components/upload-success"
+import { UploadProgressBar } from "@/components/upload-progress-bar"
 
 interface UploadStatus {
   file: File
@@ -47,8 +50,9 @@ const MAX_FILES = 10
 
 export default function UploadPage() {
   const router = useRouter()
-  const [step, setStep] = useState<"info" | "upload">("info")
+  const [step, setStep] = useState<"info" | "upload" | "success">("info")
   const [guestName, setGuestName] = useState("")
+  const [guestId, setGuestId] = useState("")
   const [guestTag, setGuestTag] = useState<GuestTag | "">("")
   const [uploads, setUploads] = useState<UploadStatus[]>([])
   const [isUploading, setIsUploading] = useState(false)
@@ -59,6 +63,7 @@ export default function UploadPage() {
   const handleInfoSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (guestName.trim()) {
+      setGuestId(guestName.trim())
       setStep("upload")
     }
   }
@@ -77,6 +82,36 @@ export default function UploadPage() {
       const supabase = createClient()
 
       try {
+        updateUploadStatus(index, { status: "compressing", progress: 5 })
+        
+        // Check for duplicates if it's an image
+        if (isImageFile(file)) {
+          try {
+            const currentHash = await generateImageHash(file)
+            const { data: existingMedia } = await supabase
+              .from("media")
+              .select("id, image_hash")
+              .eq("uploaded_by", guestName.trim())
+
+            if (existingMedia) {
+              for (const existing of existingMedia) {
+                if (existing.image_hash && isDuplicateImage(currentHash, existing.image_hash)) {
+                  throw new Error("This photo looks like a duplicate of one you already uploaded")
+                }
+              }
+            }
+            
+            // Store hash for future duplicate checks
+            updateUploadStatus(index, { status: "compressing", progress: 10 })
+          } catch (hashError) {
+            if (hashError instanceof Error && hashError.message.includes("duplicate")) {
+              throw hashError
+            }
+            // Continue if hashing fails (not critical)
+            console.log("[v0] Image hashing skipped:", hashError)
+          }
+        }
+
         updateUploadStatus(index, { status: "compressing", progress: 10 })
 
         let fileToUpload: Blob = file
@@ -146,6 +181,16 @@ export default function UploadPage() {
           thumbnailUrl = publicUrl
         }
 
+        // Calculate image hash for duplicate detection
+        let imageHash = null
+        if (isImageFile(file)) {
+          try {
+            imageHash = await generateImageHash(file)
+          } catch (e) {
+            console.log("[v0] Could not generate hash:", e)
+          }
+        }
+
         const { data: mediaData, error: dbError } = await supabase
           .from("media")
           .insert({
@@ -157,6 +202,7 @@ export default function UploadPage() {
             file_size: fileToUpload.size,
             width,
             height,
+            image_hash: imageHash,
           })
           .select()
           .single()
@@ -261,6 +307,17 @@ export default function UploadPage() {
 
   const completedCount = uploads.filter((u) => u.status === "complete").length
   const allComplete = uploads.length > 0 && completedCount === uploads.length
+
+  // Show success screen after all uploads complete
+  if (step === "success" && allComplete) {
+    return (
+      <UploadSuccess
+        guestId={guestId}
+        guestName={guestName}
+        photoCount={uploads.length}
+      />
+    )
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -451,6 +508,13 @@ export default function UploadPage() {
                   </span>
                 </div>
                 
+                {/* Overall Progress Bar */}
+                {!allComplete && (
+                  <div className="mb-6">
+                    <UploadProgressBar current={completedCount} total={uploads.length} />
+                  </div>
+                )}
+                
                 <div className="space-y-3">
                   {uploads.map((upload, index) => (
                     <UploadItem
@@ -464,19 +528,11 @@ export default function UploadPage() {
                 {allComplete && (
                   <div className="mt-8 space-y-3">
                     <Button
-                      onClick={() => router.push("/")}
+                      onClick={() => setStep("success")}
                       className="w-full rounded-full"
                       size="lg"
                     >
-                      View Gallery
-                    </Button>
-                    <Button
-                      variant="outline"
-                      onClick={() => setUploads([])}
-                      className="w-full rounded-full"
-                      size="lg"
-                    >
-                      Upload More
+                      Continue
                     </Button>
                   </div>
                 )}

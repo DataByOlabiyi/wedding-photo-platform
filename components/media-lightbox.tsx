@@ -1,9 +1,11 @@
 "use client"
 
-import { useEffect, useCallback } from "react"
+import { useEffect, useCallback, useState } from "react"
 import Image from "next/image"
-import { X, ChevronLeft, ChevronRight, Download, User } from "lucide-react"
+import { X, ChevronLeft, ChevronRight, Download, User, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { guestSelfDeleteMedia } from "@/app/actions/guest-self-delete"
+import { useMedia } from "@/lib/media-context"
 import type { MediaItem } from "@/lib/types"
 
 interface MediaLightboxProps {
@@ -28,6 +30,35 @@ export function MediaLightbox({
   totalCount,
 }: MediaLightboxProps) {
   const isVideo = media.media_type === "video"
+  const { deleteMedia } = useMedia()
+  const [isDeleting, setIsDeleting] = useState(false)
+
+  // Check if delete window is still available (30 minutes)
+  const uploadTime = new Date(media.uploaded_at).getTime()
+  const now = Date.now()
+  const diffMinutes = (now - uploadTime) / (1000 * 60)
+  const canDelete = diffMinutes <= 30
+  const minutesRemaining = Math.max(0, Math.ceil(30 - diffMinutes))
+
+  const handleDelete = async () => {
+    if (!canDelete || !confirm("Are you sure you want to delete this photo?")) return
+
+    setIsDeleting(true)
+    try {
+      const result = await guestSelfDeleteMedia(media.id, media.uploaded_by, media.uploaded_at)
+      if (result.success) {
+        deleteMedia(media.id)
+        onClose()
+      } else {
+        alert(`Failed to delete: ${result.error}`)
+      }
+    } catch (error) {
+      console.error("Delete error:", error)
+      alert("Failed to delete photo")
+    } finally {
+      setIsDeleting(false)
+    }
+  }
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
@@ -173,6 +204,26 @@ export function MediaLightbox({
             <Download className="h-5 w-5" />
             <span className="sr-only">Download</span>
           </Button>
+          
+          {canDelete && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-10 w-10 rounded-full bg-destructive/20 text-white hover:bg-destructive/40"
+              onClick={handleDelete}
+              disabled={isDeleting}
+              title={`Delete (${minutesRemaining} min remaining)`}
+            >
+              <Trash2 className="h-5 w-5" />
+              <span className="sr-only">Delete</span>
+            </Button>
+          )}
+          
+          {!canDelete && (
+            <div className="text-xs text-white/50 px-2">
+              Delete window expired
+            </div>
+          )}
         </div>
       </div>
     </div>
