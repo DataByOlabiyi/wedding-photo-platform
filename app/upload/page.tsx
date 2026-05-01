@@ -202,10 +202,22 @@ export default function UploadPage() {
       setIsUploading(true)
 
       const startIndex = uploads.length
+      // Process files in parallel with max 3 concurrent uploads
+      const concurrency = 3
+      const promises: Promise<void>[] = []
+      
       for (let i = 0; i < validFiles.length; i++) {
-        await processFile(validFiles[i], startIndex + i)
+        const promise = processFile(validFiles[i], startIndex + i)
+        promises.push(promise)
+        
+        // Limit concurrency
+        if (promises.length >= concurrency) {
+          await Promise.race(promises)
+          promises.splice(promises.findIndex(p => !p), 1)
+        }
       }
-
+      
+      await Promise.all(promises)
       setIsUploading(false)
     },
     [processFile, uploads.length]
