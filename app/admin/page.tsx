@@ -1,9 +1,10 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Trash2, Download, Image as ImageIcon, Video, Loader2, ArrowLeft, LogOut, QrCode } from "lucide-react"
+import { Trash2, Download, Image as ImageIcon, Video, Loader2, ArrowLeft, LogOut, QrCode, Users } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -24,6 +25,7 @@ import { useRouter } from "next/navigation"
 
 export default function AdminPage() {
   const router = useRouter()
+  const [activeTab, setActiveTab] = useState("gallery")
   const [media, setMedia] = useState<MediaItem[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [deletingId, setDeletingId] = useState<string | null>(null)
@@ -123,8 +125,29 @@ export default function AdminPage() {
       </header>
 
       <main className="container mx-auto px-4 py-8">
+        {/* Tabs */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="mb-8 w-full justify-start bg-transparent border-b rounded-none h-auto p-0 space-x-8">
+            <TabsTrigger 
+              value="gallery" 
+              className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-0 py-2 gap-2"
+            >
+              <ImageIcon className="h-4 w-4" />
+              Gallery
+            </TabsTrigger>
+            <TabsTrigger 
+              value="guests" 
+              className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-0 py-2 gap-2"
+            >
+              <Users className="h-4 w-4" />
+              Guests & RSVPs
+            </TabsTrigger>
+          </TabsList>
+
+          {/* Gallery Tab */}
+          <TabsContent value="gallery" className="space-y-8">
         {/* Stats */}
-        <div className="mb-8 grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-3 gap-4">
           <Card>
             <CardContent className="pt-6">
               <div className="text-center">
@@ -227,7 +250,108 @@ export default function AdminPage() {
             ))}
           </div>
         )}
+          </TabsContent>
+
+          {/* Guests Tab */}
+          <TabsContent value="guests" className="space-y-8">
+            <AdminGuestsSection media={media} isLoading={isLoading} />
+          </TabsContent>
+        </Tabs>
       </main>
+    </div>
+  )
+}
+
+interface AdminGuestsSectionProps {
+  media: MediaItem[]
+  isLoading: boolean
+}
+
+function AdminGuestsSection({ media, isLoading }: AdminGuestsSectionProps) {
+  const guests = Array.from(
+    new Map(
+      media.map((item) => [
+        item.uploaded_by,
+        {
+          name: item.uploaded_by,
+          tag: item.guest_tag || "",
+          photoCount: 0,
+          lastUpload: item.uploaded_at,
+        },
+      ])
+    ).entries()
+  )
+    .map(([_, guest]) => ({
+      ...guest,
+      photoCount: media.filter((m) => m.uploaded_by === guest.name).length,
+      lastUpload: media
+        .filter((m) => m.uploaded_by === guest.name)
+        .reduce((latest, current) => 
+          new Date(current.uploaded_at) > new Date(latest.uploaded_at) ? current : latest
+        )?.uploaded_at || new Date().toISOString(),
+    }))
+    .sort((a, b) => new Date(b.lastUpload).getTime() - new Date(a.lastUpload).getTime())
+
+  if (isLoading) {
+    return (
+      <div className="flex min-h-[300px] items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    )
+  }
+
+  if (guests.length === 0) {
+    return (
+      <div className="flex min-h-[300px] items-center justify-center">
+        <p className="text-muted-foreground">No guests have uploaded photos yet</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b">
+              <th className="text-left py-3 px-4 font-semibold text-foreground">Guest Name</th>
+              <th className="text-left py-3 px-4 font-semibold text-foreground">Category</th>
+              <th className="text-center py-3 px-4 font-semibold text-foreground">Photos</th>
+              <th className="text-left py-3 px-4 font-semibold text-foreground">Last Upload</th>
+            </tr>
+          </thead>
+          <tbody>
+            {guests.map((guest) => (
+              <tr key={guest.name} className="border-b hover:bg-muted/50 transition-colors">
+                <td className="py-3 px-4 text-foreground font-medium">{guest.name}</td>
+                <td className="py-3 px-4">
+                  {guest.tag ? (
+                    <span className="inline-block px-3 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary">
+                      {guest.tag}
+                    </span>
+                  ) : (
+                    <span className="text-muted-foreground text-xs">Not specified</span>
+                  )}
+                </td>
+                <td className="py-3 px-4 text-center">
+                  <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-primary/20 text-primary font-semibold text-sm">
+                    {guest.photoCount}
+                  </span>
+                </td>
+                <td className="py-3 px-4 text-muted-foreground text-xs">
+                  {new Date(guest.lastUpload).toLocaleDateString("en-US", {
+                    month: "short",
+                    day: "numeric",
+                    year: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   )
 }

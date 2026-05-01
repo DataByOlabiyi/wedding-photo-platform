@@ -1,15 +1,18 @@
 "use client"
 
-import { useMemo } from "react"
+import { useMemo, useState } from "react"
 import Link from "next/link"
-import { Camera, ImagePlus } from "lucide-react"
+import { Camera, ImagePlus, Loader2 } from "lucide-react"
 import { useMedia } from "@/lib/media-context"
 import { GuestFolderCard } from "@/components/guest-folder-card"
 import { Button } from "@/components/ui/button"
 import type { GuestFolder } from "@/lib/types"
 
+const ITEMS_PER_PAGE = 12
+
 export function FolderGrid() {
   const { media, isLoading } = useMedia()
+  const [displayCount, setDisplayCount] = useState(ITEMS_PER_PAGE)
 
   const guestFolders = useMemo(() => {
     // Group media by guest
@@ -90,11 +93,29 @@ export function FolderGrid() {
     )
   }
 
+  const displayedFolders = guestFolders.slice(0, displayCount)
+  const hasMore = displayCount < guestFolders.length
+
   return (
-    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-      {guestFolders.map((folder) => (
-        <GuestFolderCard key={folder.guestId} folder={folder} />
-      ))}
+    <div className="space-y-8">
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        {displayedFolders.map((folder) => (
+          <GuestFolderCard key={folder.guestId} folder={folder} />
+        ))}
+      </div>
+      
+      {hasMore && (
+        <div className="flex justify-center">
+          <Button
+            onClick={() => setDisplayCount((prev) => prev + ITEMS_PER_PAGE)}
+            variant="outline"
+            className="gap-2 rounded-full px-8"
+            size="lg"
+          >
+            <span>Load More Albums</span>
+          </Button>
+        </div>
+      )}
     </div>
   )
 }
