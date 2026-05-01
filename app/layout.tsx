@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import { Cormorant_Garamond, Inter } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
+import { ThemeProvider } from 'next-themes'
 import { MediaProvider } from '@/lib/media-context'
 import './globals.css'
 
@@ -40,12 +41,14 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className={`${cormorant.variable} ${inter.variable}`}>
+    <html lang="en" className={`${cormorant.variable} ${inter.variable}`} suppressHydrationWarning>
       <body className="font-sans antialiased">
-        <MediaProvider>
-          {children}
-        </MediaProvider>
-        <Analytics />
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+          <MediaProvider>
+            {children}
+          </MediaProvider>
+          <Analytics />
+        </ThemeProvider>
       </body>
     </html>
   )
