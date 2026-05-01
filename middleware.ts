@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { jwtVerify } from 'jose'
 
-const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || 'your-secret-key-change-this')
+const JWT_SECRET_KEY = process.env.JWT_SECRET
+const JWT_SECRET = new TextEncoder().encode(JWT_SECRET_KEY || '')
 
 export async function middleware(request: NextRequest) {
   // Allow access to /admin/login without authentication
@@ -18,9 +19,16 @@ export async function middleware(request: NextRequest) {
     }
 
     try {
+      // Verify JWT token
+      if (!JWT_SECRET_KEY) {
+        console.error('[v0] Middleware error: JWT_SECRET not set')
+        return NextResponse.redirect(new URL('/admin/login', request.url))
+      }
+      
       await jwtVerify(token, JWT_SECRET)
       return NextResponse.next()
-    } catch {
+    } catch (error) {
+      console.error('[v0] Token verification failed:', error)
       return NextResponse.redirect(new URL('/admin/login', request.url))
     }
   }
