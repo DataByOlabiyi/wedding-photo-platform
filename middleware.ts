@@ -4,7 +4,12 @@ import { jwtVerify } from 'jose'
 const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || 'your-secret-key-change-this')
 
 export async function middleware(request: NextRequest) {
-  // Protect /admin route
+  // Allow access to /admin/login without authentication
+  if (request.nextUrl.pathname === '/admin/login') {
+    return NextResponse.next()
+  }
+
+  // Protect other /admin routes
   if (request.nextUrl.pathname.startsWith('/admin')) {
     const token = request.cookies.get('admin_token')?.value
 
