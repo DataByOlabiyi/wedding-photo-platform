@@ -150,7 +150,15 @@ export default function UploadPage() {
             cacheControl: "3600",
           })
 
-        if (uploadError) throw uploadError
+        if (uploadError) {
+          // Provide helpful error message
+          if (uploadError.message.includes("Bucket not found")) {
+            throw new Error(
+              "Storage bucket not configured. Please create 'wedding-media' bucket in Supabase Storage settings."
+            )
+          }
+          throw uploadError
+        }
 
         updateUploadStatus(index, { progress: 70 })
 
