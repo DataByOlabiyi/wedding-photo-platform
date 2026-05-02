@@ -89,8 +89,7 @@ export default function AdminQRPage() {
               <div className="flex justify-center bg-white p-8 rounded-lg border">
                 <canvas
                   ref={canvasRef}
-                  className="h-auto w-80"
-                  style={{ display: 'block' }}
+                  style={{ display: 'block', maxWidth: '100%', height: 'auto' }}
                 />
               </div>
 
