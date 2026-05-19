@@ -1,16 +1,16 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { Download, ArrowLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 import QRCode from 'qrcode'
+import Image from 'next/image'
 
 export default function AdminQRPage() {
   const [qrCode, setQrCode] = useState<string>('')
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string>('')
-  const canvasRef = useRef<HTMLCanvasElement>(null)
 
   const uploadUrl = typeof window !== 'undefined' 
     ? `${window.location.origin}/upload` 
@@ -25,12 +25,8 @@ export default function AdminQRPage() {
       setIsLoading(true)
       setError('')
       
-      if (!canvasRef.current) {
-        throw new Error('Canvas element not found')
-      }
-      
-      // Generate QR code directly to canvas
-      await QRCode.toCanvas(canvasRef.current, uploadUrl, {
+      // Generate QR code as data URL directly (no canvas ref needed)
+      const dataUrl = await QRCode.toDataURL(uploadUrl, {
         errorCorrectionLevel: 'H',
         type: 'image/png',
         quality: 0.95,
@@ -42,11 +38,10 @@ export default function AdminQRPage() {
         },
       })
       
-      // Also generate data URL for download
-      const dataUrl = canvasRef.current.toDataURL('image/png')
       setQrCode(dataUrl)
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      console.error('[v0] QR generation error:', errorMessage)
       setError(`Failed to generate QR code: ${errorMessage}`)
     } finally {
       setIsLoading(false)
@@ -54,9 +49,9 @@ export default function AdminQRPage() {
   }
 
   const handleDownload = () => {
-    if (canvasRef.current) {
+    if (qrCode) {
       const link = document.createElement('a')
-      link.href = canvasRef.current.toDataURL('image/png')
+      link.href = qrCode
       link.download = 'wedding-upload-qr.png'
       document.body.appendChild(link)
       link.click()
@@ -105,16 +100,15 @@ export default function AdminQRPage() {
             <div className="flex justify-center py-12">
               <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent" />
             </div>
-          ) : !error && (
+          ) : !error && qrCode && (
             <div className="space-y-8">
               {/* QR Code Display */}
               <div className="flex justify-center bg-white p-8 rounded-lg border shadow-lg">
                 <div className="w-full max-w-sm flex items-center justify-center">
-                  <canvas
-                    ref={canvasRef}
-                    width={300}
-                    height={300}
-                    style={{ display: 'block', maxWidth: '100%', height: 'auto' }}
+                  <img
+                    src={qrCode}
+                    alt="Wedding Photo Upload QR Code"
+                    style={{ maxWidth: '100%', height: 'auto', display: 'block' }}
                   />
                 </div>
               </div>
