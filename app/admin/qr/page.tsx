@@ -87,10 +87,12 @@ export default function AdminQRPage() {
             <div className="space-y-8">
               {/* QR Code Display */}
               <div className="flex justify-center bg-white p-8 rounded-lg border">
-                <canvas
-                  ref={canvasRef}
-                  style={{ display: 'block', maxWidth: '100%', height: 'auto' }}
-                />
+                <div style={{ width: '100%', maxWidth: '500px', display: 'flex', justifyContent: 'center' }}>
+                  <canvas
+                    ref={canvasRef}
+                    style={{ display: 'block', maxWidth: '100%', height: 'auto' }}
+                  />
+                </div>
               </div>
 
               {/* URL Display */}
