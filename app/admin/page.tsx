@@ -1,25 +1,15 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Trash2, Download, Image as ImageIcon, Video, Loader2, ArrowLeft, LogOut, QrCode, Users } from "lucide-react"
+import { Download, Image as ImageIcon, Video, Loader2, ArrowLeft, LogOut, QrCode, Users } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
 import { createClient } from "@/lib/supabase/client"
 import { deleteMedia } from "@/app/actions/admin-delete"
+import { downloadAsZip } from "@/lib/zip-download"
+import { AdminUploaderGroup } from "@/components/admin-uploader-group"
 import type { MediaItem } from "@/lib/types"
-import Image from "next/image"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 
@@ -70,25 +60,7 @@ export default function AdminPage() {
   }
 
   const handleDownloadAll = async () => {
-    for (const item of media) {
-      try {
-        const response = await fetch(item.file_url)
-        const blob = await response.blob()
-        const url = window.URL.createObjectURL(blob)
-        const a = document.createElement("a")
-        a.href = url
-        const ext = item.media_type === "video" ? "mp4" : "jpg"
-        a.download = `wedding-${item.id}.${ext}`
-        document.body.appendChild(a)
-        a.click()
-        document.body.removeChild(a)
-        window.URL.revokeObjectURL(url)
-        // Small delay between downloads
-        await new Promise((resolve) => setTimeout(resolve, 500))
-      } catch (error) {
-        console.error("Download failed:", error)
-      }
-    }
+    await downloadAsZip(media, "wedding-photos")
   }
 
   const photoCount = media.filter((m) => m.media_type === "image").length
@@ -180,7 +152,7 @@ export default function AdminPage() {
           </Card>
         </div>
 
-        {/* Media Grid */}
+        {/* Grouped Media by Uploader */}
         {isLoading ? (
           <div className="flex min-h-[300px] items-center justify-center">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -190,63 +162,19 @@ export default function AdminPage() {
             <p className="text-muted-foreground">No media uploaded yet</p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-            {media.map((item) => (
-              <div key={item.id} className="group relative">
-                <div className="relative aspect-square overflow-hidden rounded-lg bg-muted">
-                  <Image
-                    src={item.thumbnail_url || item.file_url}
-                    alt={`Photo by ${item.uploaded_by}`}
-                    fill
-                    className="object-cover"
-                    sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, 20vw"
-                  />
-                  {item.media_type === "video" && (
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <Video className="h-8 w-8 text-primary-foreground drop-shadow-lg" />
-                    </div>
-                  )}
-                </div>
-                <div className="mt-2 flex items-center justify-between">
-                  <p className="text-xs text-muted-foreground truncate flex-1">
-                    {item.uploaded_by}
-                  </p>
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-destructive hover:text-destructive"
-                        disabled={deletingId === item.id}
-                      >
-                        {deletingId === item.id ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <Trash2 className="h-4 w-4" />
-                        )}
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Delete this media?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          This action cannot be undone. This will permanently delete
-                          the {item.media_type} uploaded by {item.uploaded_by}.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction
-                          onClick={() => handleDelete(item)}
-                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                        >
-                          Delete
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                </div>
-              </div>
+          <div className="space-y-8">
+            {Array.from(
+              new Map(
+                media.map((item) => [item.uploaded_by, item.uploaded_by])
+              ).values()
+            ).map((uploaderName) => (
+              <AdminUploaderGroup
+                key={uploaderName}
+                uploaderName={uploaderName}
+                media={media}
+                onDeleteMedia={handleDelete}
+                deletingId={deletingId}
+              />
             ))}
           </div>
         )}

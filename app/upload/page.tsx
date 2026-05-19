@@ -47,6 +47,7 @@ interface UploadStatus {
 
 const MAX_FILE_SIZE_MB = 50
 const MAX_FILES = 10
+const MAX_VIDEOS = 5
 
 export default function UploadPage() {
   const router = useRouter()
@@ -234,6 +235,18 @@ export default function UploadPage() {
 
   const processFiles = useCallback(
     async (files: File[]) => {
+      const errors: string[] = []
+      
+      // Check video count limit
+      const currentVideoCount = uploads.filter(
+        (u) => isVideoFile(u.file)
+      ).length
+      const newVideos = files.filter((f) => isVideoFile(f)).length
+
+      if (currentVideoCount + newVideos > MAX_VIDEOS) {
+        errors.push(`You can only upload a maximum of ${MAX_VIDEOS} videos. You already have ${currentVideoCount} video(s).`)
+      }
+
       const validFiles = files.filter((file) => {
         if (!isImageFile(file) && !isVideoFile(file)) return false
         if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) return false
@@ -241,7 +254,20 @@ export default function UploadPage() {
       }).slice(0, MAX_FILES)
 
       if (validFiles.length === 0) {
-        alert("No valid files selected. Please choose images or videos under 50MB.")
+        const msg = errors.length > 0 
+          ? errors.join("\n") 
+          : "No valid files selected. Please choose images or videos under 50MB."
+        alert(msg)
+        return
+      }
+      
+      if (errors.length > 0) {
+        alert(errors.join("\n"))
+        return
+      }
+
+      if (uploads.length + validFiles.length > MAX_FILES) {
+        alert(`Maximum ${MAX_FILES} files allowed`)
         return
       }
 
