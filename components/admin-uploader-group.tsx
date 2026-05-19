@@ -2,11 +2,12 @@
 
 import { useState } from 'react'
 import Image from 'next/image'
-import { Loader2, Download, Trash2, Video } from 'lucide-react'
+import { Loader2, Download, Trash2, Video, ChevronRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { downloadByUploaderAsZip } from '@/lib/zip-download'
 import type { MediaItem } from '@/lib/types'
+import Link from 'next/link'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -50,27 +51,37 @@ export function AdminUploaderGroup({
   return (
     <Card className="overflow-hidden">
       <CardHeader className="flex flex-row items-center justify-between pb-4">
-        <div className="flex-1">
+        <Link 
+          href={`/admin/uploader/${encodeURIComponent(uploaderName)}`}
+          className="flex-1 cursor-pointer hover:opacity-80 transition-opacity"
+        >
           <CardTitle className="text-lg">{uploaderName}</CardTitle>
           <div className="mt-2 flex gap-4 text-sm text-muted-foreground">
             <span>{photoCount} photo{photoCount !== 1 ? 's' : ''}</span>
             {videoCount > 0 && <span>{videoCount} video{videoCount !== 1 ? 's' : ''}</span>}
           </div>
+        </Link>
+        <div className="flex gap-2">
+          <Button
+            onClick={handleDownloadGroup}
+            disabled={isDownloading}
+            variant="outline"
+            size="sm"
+            className="gap-2"
+          >
+            {isDownloading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Download className="h-4 w-4" />
+            )}
+            Download
+          </Button>
+          <Link href={`/admin/uploader/${encodeURIComponent(uploaderName)}`}>
+            <Button variant="outline" size="sm">
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </Link>
         </div>
-        <Button
-          onClick={handleDownloadGroup}
-          disabled={isDownloading}
-          variant="outline"
-          size="sm"
-          className="gap-2"
-        >
-          {isDownloading ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <Download className="h-4 w-4" />
-          )}
-          Download
-        </Button>
       </CardHeader>
 
       <CardContent>

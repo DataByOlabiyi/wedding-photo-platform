@@ -9,6 +9,7 @@ import QRCode from 'qrcode'
 export default function AdminQRPage() {
   const [qrCode, setQrCode] = useState<string>('')
   const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string>('')
   const canvasRef = useRef<HTMLCanvasElement>(null)
 
   const uploadUrl = typeof window !== 'undefined' 
@@ -22,25 +23,31 @@ export default function AdminQRPage() {
   const generateQRCode = async () => {
     try {
       setIsLoading(true)
-      if (canvasRef.current) {
-        await QRCode.toCanvas(canvasRef.current, uploadUrl, {
-          errorCorrectionLevel: 'H',
-          type: 'image/png',
-          quality: 0.95,
-          margin: 1,
-          width: 500,
-          color: {
-            dark: '#1a1a1a',
-            light: '#ffffff',
-          },
-        })
-        
-        // Also generate data URL for preview
-        const dataUrl = canvasRef.current.toDataURL('image/png')
-        setQrCode(dataUrl)
+      setError('')
+      
+      if (!canvasRef.current) {
+        throw new Error('Canvas element not found')
       }
+      
+      // Generate QR code directly to canvas
+      await QRCode.toCanvas(canvasRef.current, uploadUrl, {
+        errorCorrectionLevel: 'H',
+        type: 'image/png',
+        quality: 0.95,
+        margin: 2,
+        width: 300,
+        color: {
+          dark: '#000000',
+          light: '#ffffff',
+        },
+      })
+      
+      // Also generate data URL for download
+      const dataUrl = canvasRef.current.toDataURL('image/png')
+      setQrCode(dataUrl)
     } catch (error) {
-      console.error('Failed to generate QR code:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      setError(`Failed to generate QR code: ${errorMessage}`)
     } finally {
       setIsLoading(false)
     }
@@ -79,17 +86,34 @@ export default function AdminQRPage() {
             </p>
           </div>
 
+          {error && (
+            <div className="bg-destructive/10 border border-destructive text-destructive p-4 rounded-lg">
+              <p className="font-semibold">Error generating QR code</p>
+              <p className="text-sm mt-1">{error}</p>
+              <Button 
+                onClick={generateQRCode} 
+                variant="outline" 
+                size="sm"
+                className="mt-4"
+              >
+                Retry
+              </Button>
+            </div>
+          )}
+
           {isLoading ? (
             <div className="flex justify-center py-12">
               <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent" />
             </div>
-          ) : (
+          ) : !error && (
             <div className="space-y-8">
               {/* QR Code Display */}
-              <div className="flex justify-center bg-white p-8 rounded-lg border">
-                <div style={{ width: '100%', maxWidth: '500px', display: 'flex', justifyContent: 'center' }}>
+              <div className="flex justify-center bg-white p-8 rounded-lg border shadow-lg">
+                <div className="w-full max-w-sm flex items-center justify-center">
                   <canvas
                     ref={canvasRef}
+                    width={300}
+                    height={300}
                     style={{ display: 'block', maxWidth: '100%', height: 'auto' }}
                   />
                 </div>

@@ -1,10 +1,18 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { Download, Image as ImageIcon, Video, Loader2, ArrowLeft, LogOut, QrCode, Users } from "lucide-react"
+import { useState, useEffect, useMemo } from "react"
+import { Download, Image as ImageIcon, Video, Loader2, ArrowLeft, LogOut, QrCode, Users, Search } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Input } from "@/components/ui/input"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { createClient } from "@/lib/supabase/client"
 import { deleteMedia } from "@/app/actions/admin-delete"
 import { downloadAsZip } from "@/lib/zip-download"
@@ -13,12 +21,18 @@ import type { MediaItem } from "@/lib/types"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 
+type SortOption = "recent" | "alphabetical" | "most-uploads"
+
 export default function AdminPage() {
   const router = useRouter()
   const [activeTab, setActiveTab] = useState("gallery")
   const [media, setMedia] = useState<MediaItem[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [searchQuery, setSearchQuery] = useState("")
+  const [sortBy, setSortBy] = useState<SortOption>("recent")
+  const [currentPage, setCurrentPage] = useState(1)
+  const uploaderGroupsPerPage = 6
 
   useEffect(() => {
     fetchMedia()
@@ -65,6 +79,46 @@ export default function AdminPage() {
 
   const photoCount = media.filter((m) => m.media_type === "image").length
   const videoCount = media.filter((m) => m.media_type === "video").length
+
+  // Get unique uploaders with filtering and sorting
+  const uploaders = useMemo(() => {
+    const uniqueUploaders = Array.from(
+      new Set(media.map((item) => item.uploaded_by))
+    )
+
+    // Filter by search query
+    const filtered = uniqueUploaders.filter((name) =>
+      name.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+
+    // Sort by selected option
+    const sorted = filtered.sort((a, b) => {
+      const mediaA = media.filter((m) => m.uploaded_by === a)
+      const mediaB = media.filter((m) => m.uploaded_by === b)
+
+      if (sortBy === "alphabetical") {
+        return a.localeCompare(b)
+      } else if (sortBy === "most-uploads") {
+        return mediaB.length - mediaA.length
+      } else {
+        // recent
+        const latestA = Math.max(
+          ...mediaA.map((m) => new Date(m.uploaded_at).getTime())
+        )
+        const latestB = Math.max(
+          ...mediaB.map((m) => new Date(m.uploaded_at).getTime())
+        )
+        return latestB - latestA
+      }
+    })
+
+    return sorted
+  }, [media, searchQuery, sortBy])
+
+  // Pagination for uploader groups
+  const totalPages = Math.ceil(uploaders.length / uploaderGroupsPerPage)
+  const startIndex = (currentPage - 1) * uploaderGroupsPerPage
+  const paginatedUploaders = uploaders.slice(startIndex, startIndex + uploaderGroupsPerPage)
 
   return (
     <div className="min-h-screen bg-background">
@@ -118,6 +172,29 @@ export default function AdminPage() {
 
           {/* Gallery Tab */}
           <TabsContent value="gallery" className="space-y-8">
+            {/* Search and Filter Bar */}
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search by uploader name..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
+              <Select value={sortBy} onValueChange={(value) => setSortBy(value as SortOption)}>
+                <SelectTrigger className="w-full sm:w-48">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="recent">Most Recent Uploads</SelectItem>
+                  <SelectItem value="most-uploads">Most Uploads</SelectItem>
+                  <SelectItem value="alphabetical">Alphabetical</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
         {/* Stats */}
         <div className="grid grid-cols-3 gap-4">
           <Card>
@@ -161,21 +238,46 @@ export default function AdminPage() {
           <div className="flex min-h-[300px] items-center justify-center">
             <p className="text-muted-foreground">No media uploaded yet</p>
           </div>
+        ) : uploaders.length === 0 ? (
+          <div className="flex min-h-[300px] items-center justify-center">
+            <p className="text-muted-foreground">No uploaders found matching your search</p>
+          </div>
         ) : (
           <div className="space-y-8">
-            {Array.from(
-              new Map(
-                media.map((item) => [item.uploaded_by, item.uploaded_by])
-              ).values()
-            ).map((uploaderName) => (
-              <AdminUploaderGroup
-                key={uploaderName}
-                uploaderName={uploaderName}
-                media={media}
-                onDeleteMedia={handleDelete}
-                deletingId={deletingId}
-              />
-            ))}
+            <div className="space-y-8">
+              {paginatedUploaders.map((uploaderName) => (
+                <AdminUploaderGroup
+                  key={uploaderName}
+                  uploaderName={uploaderName}
+                  media={media}
+                  onDeleteMedia={handleDelete}
+                  deletingId={deletingId}
+                />
+              ))}
+            </div>
+
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-center gap-2 pt-4">
+                <Button
+                  variant="outline"
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                >
+                  Previous
+                </Button>
+                <span className="text-sm text-muted-foreground px-4">
+                  Page {currentPage} of {totalPages}
+                </span>
+                <Button
+                  variant="outline"
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                >
+                  Next
+                </Button>
+              </div>
+            )}
           </div>
         )}
           </TabsContent>
