@@ -20,6 +20,7 @@ export async function checkDuplicateHash(fileHash: string): Promise<boolean> {
     .from('media')
     .select('id')
     .eq('file_hash', fileHash)
+    .is('deleted_at', null)
     .limit(1)
 
   if (error) {

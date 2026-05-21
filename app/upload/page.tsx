@@ -36,6 +36,7 @@ import { useMedia } from "@/lib/media-context"
 import { GUEST_TAGS, type GuestTag } from "@/lib/types"
 import { UploadSuccess } from "@/components/upload-success"
 import { UploadProgressBar } from "@/components/upload-progress-bar"
+import { validateUploaderName, validateGuestTag, sanitizeInput } from "@/lib/validation-schemas"
 
 interface UploadStatus {
   file: File
@@ -63,10 +64,27 @@ export default function UploadPage() {
 
   const handleInfoSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (guestName.trim()) {
-      setGuestId(guestName.trim())
-      setStep("upload")
+    
+    // Validate uploader name
+    const nameValidation = validateUploaderName(guestName)
+    if (!nameValidation.valid) {
+      alert(nameValidation.error || "Invalid name")
+      return
     }
+
+    // Validate guest tag if provided
+    if (guestTag) {
+      const tagValidation = validateGuestTag(guestTag)
+      if (!tagValidation.valid) {
+        alert(tagValidation.error || "Invalid tag")
+        return
+      }
+    }
+
+    // Use sanitized name for guest ID
+    const sanitizedName = sanitizeInput(guestName)
+    setGuestId(sanitizedName)
+    setStep("upload")
   }
 
   const updateUploadStatus = useCallback(
@@ -279,7 +297,25 @@ export default function UploadPage() {
       }))
 
       setUploads((prev) => [...prev, ...newUploads])
+
       setIsUploading(true)
+
+      // Check rate limit before starting uploads
+      try {
+        const rateCheckResponse = await fetch('/api/upload/check-rate-limit', {
+          method: 'POST',
+        })
+        const rateCheckData = await rateCheckResponse.json()
+        
+        if (!rateCheckData.allowed) {
+          alert('Rate limit exceeded. You have reached the maximum number of uploads per hour (30 files). Please try again later.')
+          setIsUploading(false)
+          return
+        }
+      } catch (error) {
+        console.error('Rate limit check error:', error)
+        // Continue anyway if rate limit check fails
+      }
 
       const startIndex = uploads.length
       // Process files in parallel with max 3 concurrent uploads

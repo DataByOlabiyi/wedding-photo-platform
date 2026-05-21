@@ -25,6 +25,7 @@ export function usePaginatedMedia() {
     const { data, error } = await supabase
       .from('media')
       .select('*')
+      .is('deleted_at', null)
       .order('uploaded_at', { ascending: false })
       .range(from, to)
 
@@ -76,6 +77,7 @@ export function usePaginatedGuestMedia(guestId: string) {
         .from('media')
         .select('*')
         .eq('uploaded_by', guestId)
+        .is('deleted_at', null)
         .order('uploaded_at', { ascending: false })
         .range(from, to)
 

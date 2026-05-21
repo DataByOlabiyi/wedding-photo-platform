@@ -4,36 +4,31 @@ import { useState, useMemo } from "react"
 import { useParams } from "next/navigation"
 import Image from "next/image"
 import Link from "next/link"
-import { ArrowLeft, Download, Camera, Play, User, Plus } from "lucide-react"
+import { ArrowLeft, Download, Camera, Play, User, Plus, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { useMedia } from "@/lib/media-context"
 import { MediaLightbox } from "@/components/media-lightbox"
+import { createClient } from "@/lib/supabase/client"
+import { usePaginatedGuestMedia } from "@/hooks/use-paginated-media"
+import { downloadAsZip } from "@/lib/zip-download"
 import type { MediaItem } from "@/lib/types"
 
-export default function GuestMediaPage() {
-  const params = useParams()
-  const guestId = decodeURIComponent(params.guestId as string)
-  const { media, isLoading } = useMedia()
+export default function GuestPage({ params }: { params: Promise<{ guestId: string }> }) {
+  const [guestId, setGuestId] = useState<string>("")
+  const { media: guestMedia, isLoading } = usePaginatedGuestMedia(guestId)
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null)
-
-  const guestMedia = useMemo(() => {
-    return media
-      .filter((item) => item.uploaded_by === guestId)
-      .sort((a, b) => new Date(b.uploaded_at).getTime() - new Date(a.uploaded_at).getTime())
-  }, [media, guestId])
+  const [isDownloading, setIsDownloading] = useState(false)
 
   const handleDownloadAll = async () => {
-    for (const item of guestMedia) {
-      const response = await fetch(item.file_url)
-      const blob = await response.blob()
-      const url = window.URL.createObjectURL(blob)
-      const a = document.createElement("a")
-      a.href = url
-      a.download = `${guestId}-${item.id}.${item.media_type === "video" ? "mp4" : "jpg"}`
-      document.body.appendChild(a)
-      a.click()
-      document.body.removeChild(a)
-      window.URL.revokeObjectURL(url)
+    if (guestMedia.length === 0) return
+    
+    setIsDownloading(true)
+    try {
+      await downloadAsZip(guestMedia, `${guestId}-photos`)
+    } catch (error) {
+      console.error('Download error:', error)
+      alert('Failed to download photos. Please try again.')
+    } finally {
+      setIsDownloading(false)
     }
   }
 
@@ -70,13 +65,19 @@ export default function GuestMediaPage() {
           
           {guestMedia.length > 0 && (
             <Button
-              variant="outline"
-              size="sm"
               onClick={handleDownloadAll}
-              className="gap-2 rounded-full"
+              disabled={isDownloading}
+              variant="outline"
+              className="gap-2"
             >
-              <Download className="h-4 w-4" />
-              <span className="hidden sm:inline">Download All</span>
+              {isDownloading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Download className="h-4 w-4" />
+              )}
+              <span className="hidden sm:inline">
+                {isDownloading ? "Downloading..." : "Download All"}
+              </span>
             </Button>
           )}
         </div>

@@ -44,6 +44,7 @@ export default function AdminPage() {
     const { data, error } = await supabase
       .from("media")
       .select("*")
+      .is("deleted_at", null)
       .order("uploaded_at", { ascending: false })
 
     if (!error && data) {

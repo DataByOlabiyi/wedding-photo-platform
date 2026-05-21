@@ -50,6 +50,7 @@ export default function UploaderDetailsPage() {
       .from('media')
       .select('*')
       .eq('uploaded_by', uploaderName)
+      .is('deleted_at', null)
       .order('uploaded_at', { ascending: false })
 
     if (!error && data) {
