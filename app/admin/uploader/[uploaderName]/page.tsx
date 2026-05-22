@@ -50,6 +50,7 @@ export default function UploaderDetailsPage() {
       .from('media')
       .select('*')
       .eq('uploaded_by', uploaderName)
+      .is('deleted_at', null)
       .order('uploaded_at', { ascending: false })
 
     if (!error && data) {
@@ -226,20 +227,21 @@ export default function UploaderDetailsPage() {
             )}
 
             {/* Gallery Grid */}
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+            {/* Masonry Grid Gallery */}
+            <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
               {paginatedMedia.map((item, idx) => (
                 <div
                   key={item.id}
-                  className="group relative cursor-pointer"
+                  className="group relative cursor-pointer transition-transform duration-200 hover:scale-105"
                   onClick={() => setSelectedIndex(idx)}
                 >
-                  <div className="relative aspect-square overflow-hidden rounded-lg bg-muted">
+                  <div className="relative aspect-square overflow-hidden rounded-xl bg-muted ring-1 ring-border/50 shadow-sm">
                     <Image
                       src={item.thumbnail_url || item.file_url}
                       alt={`Photo by ${item.uploaded_by}`}
                       fill
-                      className="object-cover group-hover:scale-110 transition-transform"
-                      sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, 20vw"
+                      className="object-cover transition-transform duration-300 group-hover:scale-110"
+                      sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 16vw"
                     />
                     {item.media_type === 'video' && (
                       <div className="absolute inset-0 flex items-center justify-center bg-black/30">

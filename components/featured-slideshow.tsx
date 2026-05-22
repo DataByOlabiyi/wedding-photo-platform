@@ -26,6 +26,7 @@ export function FeaturedSlideshow() {
           .select('*')
           .in('id', mediaIds)
           .eq('media_type', 'image')
+          .is('deleted_at', null)
 
         if (media) {
           setFeaturedMedia(media as MediaItem[])

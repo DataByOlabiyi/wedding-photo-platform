@@ -30,6 +30,7 @@ export function MediaProvider({ children }: { children: ReactNode }) {
       const { data, error: fetchError } = await supabase
         .from("media")
         .select("*")
+        .is("deleted_at", null)
         .order("uploaded_at", { ascending: false })
 
       if (fetchError) throw fetchError
