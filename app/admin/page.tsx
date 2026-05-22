@@ -15,8 +15,8 @@ import {
 } from "@/components/ui/select"
 import { createClient } from "@/lib/supabase/client"
 import { deleteMedia } from "@/app/actions/admin-delete"
-import { downloadAsZip } from "@/lib/zip-download"
-import { AdminUploaderGroup } from "@/components/admin-uploader-group"
+import { downloadAsZip, downloadByUploaderAsZip } from "@/lib/zip-download"
+import { FolderPreviewCard } from "@/components/folder-preview-card"
 import type { MediaItem } from "@/lib/types"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
@@ -245,21 +245,29 @@ export default function AdminPage() {
           </div>
         ) : (
           <div className="space-y-8">
-            <div className="space-y-8">
-              {paginatedUploaders.map((uploaderName) => (
-                <AdminUploaderGroup
-                  key={uploaderName}
-                  uploaderName={uploaderName}
-                  media={media}
-                  onDeleteMedia={handleDelete}
-                  deletingId={deletingId}
-                />
-              ))}
+            {/* Folder Preview Grid */}
+            <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {paginatedUploaders.map((uploaderName) => {
+                const uploaderMedia = media.filter((m) => m.uploaded_by === uploaderName)
+                const handleDownload = async () => {
+                  await downloadByUploaderAsZip(uploaderMedia, uploaderName)
+                }
+                
+                return (
+                  <FolderPreviewCard
+                    key={uploaderName}
+                    uploaderName={uploaderName}
+                    media={uploaderMedia}
+                    onDownload={handleDownload}
+                    isDownloading={false}
+                  />
+                )
+              })}
             </div>
 
             {/* Pagination Controls */}
             {totalPages > 1 && (
-              <div className="flex items-center justify-center gap-2 pt-4">
+              <div className="flex items-center justify-center gap-2 pt-8">
                 <Button
                   variant="outline"
                   onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
