@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, use } from "react"
 import { useParams } from "next/navigation"
 import Image from "next/image"
 import Link from "next/link"
@@ -13,8 +13,9 @@ import { downloadAsZip } from "@/lib/zip-download"
 import type { MediaItem } from "@/lib/types"
 
 export default function GuestPage({ params }: { params: Promise<{ guestId: string }> }) {
-  const [guestId, setGuestId] = useState<string>("")
-  const { media: guestMedia, isLoading } = usePaginatedGuestMedia(guestId)
+  const resolvedParams = use(params)
+  const decodedGuestId = decodeURIComponent(resolvedParams.guestId)
+  const { media: guestMedia, isLoading } = usePaginatedGuestMedia(decodedGuestId)
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null)
   const [isDownloading, setIsDownloading] = useState(false)
 
@@ -23,7 +24,7 @@ export default function GuestPage({ params }: { params: Promise<{ guestId: strin
     
     setIsDownloading(true)
     try {
-      await downloadAsZip(guestMedia, `${guestId}-photos`)
+      await downloadAsZip(guestMedia, `${decodedGuestId}-photos`)
     } catch (error) {
       console.error('Download error:', error)
       alert('Failed to download photos. Please try again.')
@@ -32,7 +33,7 @@ export default function GuestPage({ params }: { params: Promise<{ guestId: strin
     }
   }
 
-  const initials = guestId
+  const initials = decodedGuestId
     .split(" ")
     .map((n) => n[0])
     .join("")
@@ -90,7 +91,7 @@ export default function GuestPage({ params }: { params: Promise<{ guestId: strin
             {initials || <User className="h-8 w-8" />}
           </div>
           <h1 className="font-serif text-3xl font-semibold text-foreground md:text-4xl">
-            {guestId}
+            {decodedGuestId}
           </h1>
           <p className="mt-2 text-muted-foreground">
             {guestMedia.length} photo{guestMedia.length !== 1 ? "s" : ""} shared
