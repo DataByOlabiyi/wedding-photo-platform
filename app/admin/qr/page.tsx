@@ -12,9 +12,9 @@ export default function AdminQRPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string>('')
 
-  const uploadUrl = typeof window !== 'undefined' 
-    ? `${window.location.origin}/upload` 
-    : 'https://bm-wedding-photo.vercel.app/upload'
+  const galleryUrl = typeof window !== 'undefined' 
+    ? `${window.location.origin}/` 
+    : 'https://bm-wedding-photo.vercel.app/'
 
   useEffect(() => {
     generateQRCode()
@@ -26,7 +26,7 @@ export default function AdminQRPage() {
       setError('')
       
       // Generate QR code as data URL directly (no canvas ref needed)
-      const dataUrl = await QRCode.toDataURL(uploadUrl, {
+      const dataUrl = await QRCode.toDataURL(galleryUrl, {
         errorCorrectionLevel: 'H',
         type: 'image/png',
         quality: 0.95,
@@ -52,7 +52,7 @@ export default function AdminQRPage() {
     if (qrCode) {
       const link = document.createElement('a')
       link.href = qrCode
-      link.download = 'wedding-upload-qr.png'
+      link.download = 'wedding-gallery-qr.png'
       document.body.appendChild(link)
       link.click()
       document.body.removeChild(link)
@@ -77,7 +77,7 @@ export default function AdminQRPage() {
           <div className="text-center space-y-4">
             <h2 className="font-serif text-2xl">Share with Your Guests</h2>
             <p className="text-muted-foreground">
-              Guests can scan this QR code to upload their wedding photos
+              Guests can scan this QR code to view and contribute to the wedding photo gallery
             </p>
           </div>
 
@@ -115,9 +115,9 @@ export default function AdminQRPage() {
 
               {/* URL Display */}
               <div className="bg-muted p-4 rounded-lg space-y-2">
-                <p className="text-sm font-semibold">Upload URL</p>
+                <p className="text-sm font-semibold">Gallery URL</p>
                 <p className="text-sm text-muted-foreground break-all font-mono">
-                  {uploadUrl}
+                  {galleryUrl}
                 </p>
               </div>
 
@@ -138,7 +138,7 @@ export default function AdminQRPage() {
                   <li>Download the QR code above</li>
                   <li>Print it and display at the wedding reception</li>
                   <li>Share the URL digitally or via text message</li>
-                  <li>Guests scan to start uploading their photos</li>
+                  <li>Guests scan to view the photo gallery and upload their photos</li>
                 </ul>
               </div>
             </div>
