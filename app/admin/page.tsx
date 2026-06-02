@@ -17,6 +17,7 @@ import { createClient } from "@/lib/supabase/client"
 import { deleteMedia } from "@/app/actions/admin-delete"
 import { downloadAsZip, downloadByUploaderAsZip } from "@/lib/zip-download"
 import { FolderPreviewCard } from "@/components/folder-preview-card"
+import { FeaturedMediaManager } from "@/components/featured-media-manager"
 import type { MediaItem } from "@/lib/types"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
@@ -169,6 +170,13 @@ export default function AdminPage() {
               <Users className="h-4 w-4" />
               Guests & RSVPs
             </TabsTrigger>
+            <TabsTrigger 
+              value="featured" 
+              className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-0 py-2 gap-2"
+            >
+              <ImageIcon className="h-4 w-4" />
+              Featured Media
+            </TabsTrigger>
           </TabsList>
 
           {/* Gallery Tab */}
@@ -292,8 +300,18 @@ export default function AdminPage() {
           </TabsContent>
 
           {/* Guests Tab */}
-          <TabsContent value="guests" className="space-y-8">
-            <AdminGuestsSection media={media} isLoading={isLoading} />
+          <TabsContent value="guests" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Guest Management Coming Soon</CardTitle>
+                <CardDescription>RSVP tracking and guest features will be available soon</CardDescription>
+              </CardHeader>
+            </Card>
+          </TabsContent>
+
+          {/* Featured Media Tab */}
+          <TabsContent value="featured" className="space-y-8">
+            <FeaturedMediaManager allMedia={media} />
           </TabsContent>
         </Tabs>
       </main>
