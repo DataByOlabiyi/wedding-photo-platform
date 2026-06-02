@@ -4,13 +4,6 @@ import { SignJWT } from 'jose'
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD
 const JWT_SECRET_KEY = process.env.JWT_SECRET
 
-// Validate that required env vars are set
-if (!ADMIN_PASSWORD || !JWT_SECRET_KEY) {
-  console.error('[v0] CRITICAL: Missing required environment variables!')
-  console.error('[v0] ADMIN_PASSWORD set:', !!ADMIN_PASSWORD)
-  console.error('[v0] JWT_SECRET set:', !!JWT_SECRET_KEY)
-}
-
 const JWT_SECRET = new TextEncoder().encode(JWT_SECRET_KEY || '')
 
 export async function POST(request: Request) {

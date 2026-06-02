@@ -1,5 +1,9 @@
 "use client"
 
+import { dynamic } from "next/dynamic"
+
+export const dynamic = "force-dynamic"
+
 import { useState, useEffect, useMemo } from "react"
 import { Download, Image as ImageIcon, Video, Loader2, ArrowLeft, LogOut, QrCode, Users, Search } from "lucide-react"
 import { Button } from "@/components/ui/button"
