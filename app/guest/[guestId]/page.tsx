@@ -1,27 +1,31 @@
 "use client"
 
-import { useState, useMemo, use } from "react"
-import { useParams } from "next/navigation"
+import { useState, use } from "react"
 import Image from "next/image"
 import Link from "next/link"
-import { ArrowLeft, Download, Camera, Play, User, Plus, Loader2 } from "lucide-react"
+import { ArrowLeft, Download, Camera, Play, User, Plus, Loader2, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { MediaLightbox } from "@/components/media-lightbox"
-import { createClient } from "@/lib/supabase/client"
 import { usePaginatedGuestMedia } from "@/hooks/use-paginated-media"
 import { downloadAsZip } from "@/lib/zip-download"
+import { guestSelfDeleteMedia } from "@/app/actions/guest-self-delete"
 import type { MediaItem } from "@/lib/types"
+
+const DELETE_WINDOW_MS = 30 * 60 * 1000
+
+function isWithinDeleteWindow(uploadedAt: string): boolean {
+  return Date.now() - new Date(uploadedAt).getTime() < DELETE_WINDOW_MS
+}
 
 export default function GuestPage({ params }: { params: Promise<{ guestId: string }> }) {
   const resolvedParams = use(params)
   const decodedGuestId = decodeURIComponent(resolvedParams.guestId)
-  const { media: guestMedia, isLoading } = usePaginatedGuestMedia(decodedGuestId)
+  const { media: guestMedia, isLoading, removeMedia } = usePaginatedGuestMedia(decodedGuestId)
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null)
   const [isDownloading, setIsDownloading] = useState(false)
 
   const handleDownloadAll = async () => {
     if (guestMedia.length === 0) return
-    
     setIsDownloading(true)
     try {
       await downloadAsZip(guestMedia, `${decodedGuestId}-photos`)
@@ -30,6 +34,17 @@ export default function GuestPage({ params }: { params: Promise<{ guestId: strin
       alert('Failed to download photos. Please try again.')
     } finally {
       setIsDownloading(false)
+    }
+  }
+
+  const handleDelete = async (item: MediaItem) => {
+    if (!confirm('Delete this photo? This cannot be undone.')) return
+    const result = await guestSelfDeleteMedia(item.id, decodedGuestId, item.uploaded_at)
+    if (result.success) {
+      removeMedia(item.id)
+      if (selectedIndex !== null) setSelectedIndex(null)
+    } else {
+      alert(result.error || 'Failed to delete photo.')
     }
   }
 
@@ -63,7 +78,7 @@ export default function GuestPage({ params }: { params: Promise<{ guestId: strin
             <ArrowLeft className="h-5 w-5" />
             <span className="font-medium">Back</span>
           </Link>
-          
+
           {guestMedia.length > 0 && (
             <Button
               onClick={handleDownloadAll}
@@ -106,6 +121,7 @@ export default function GuestPage({ params }: { params: Promise<{ guestId: strin
                 key={item.id}
                 item={item}
                 onClick={() => setSelectedIndex(index)}
+                onDelete={isWithinDeleteWindow(item.uploaded_at) ? () => handleDelete(item) : undefined}
               />
             ))}
           </div>
@@ -156,36 +172,52 @@ export default function GuestPage({ params }: { params: Promise<{ guestId: strin
 function MediaThumbnail({
   item,
   onClick,
+  onDelete,
 }: {
   item: MediaItem
   onClick: () => void
+  onDelete?: () => void
 }) {
   const isVideo = item.media_type === "video"
 
   return (
-    <button
-      onClick={onClick}
-      className="group relative aspect-square w-full overflow-hidden rounded-xl bg-muted ring-1 ring-border/50 transition-all duration-300 hover:ring-primary/50 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
-    >
-      <Image
-        src={item.thumbnail_url || item.file_url}
-        alt="Photo"
-        fill
-        className="object-cover transition-transform duration-300 group-hover:scale-105"
-        sizes="(max-width: 640px) 50vw, (max-width: 1024px) 25vw, 20vw"
-      />
-      
-      {/* Video Overlay */}
-      {isVideo && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black/20">
-          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/90 shadow-lg">
-            <Play className="h-5 w-5 text-foreground ml-0.5" fill="currentColor" />
+    <div className="group relative aspect-square w-full overflow-hidden rounded-xl bg-muted ring-1 ring-border/50 transition-all duration-300 hover:ring-primary/50 hover:shadow-lg">
+      <button
+        onClick={onClick}
+        className="absolute inset-0 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+        aria-label="View photo"
+      >
+        <Image
+          src={item.thumbnail_url || item.file_url}
+          alt="Photo"
+          fill
+          className="object-cover transition-transform duration-300 group-hover:scale-105"
+          sizes="(max-width: 640px) 50vw, (max-width: 1024px) 25vw, 20vw"
+        />
+
+        {/* Video Overlay */}
+        {isVideo && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/90 shadow-lg">
+              <Play className="h-5 w-5 text-foreground ml-0.5" fill="currentColor" />
+            </div>
           </div>
-        </div>
+        )}
+
+        {/* Hover Overlay */}
+        <div className="absolute inset-0 bg-black/0 transition-colors group-hover:bg-black/10" />
+      </button>
+
+      {/* Delete Button — only shown within 30-min window */}
+      {onDelete && (
+        <button
+          onClick={(e) => { e.stopPropagation(); onDelete() }}
+          className="absolute right-1.5 top-1.5 flex h-7 w-7 items-center justify-center rounded-full bg-black/60 text-white opacity-0 transition-opacity group-hover:opacity-100 hover:bg-red-600"
+          aria-label="Delete photo"
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+        </button>
       )}
-      
-      {/* Hover Overlay */}
-      <div className="absolute inset-0 bg-black/0 transition-colors group-hover:bg-black/10" />
-    </button>
+    </div>
   )
 }

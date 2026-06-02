@@ -29,7 +29,6 @@ export default function AdminQRPage() {
       const dataUrl = await QRCode.toDataURL(galleryUrl, {
         errorCorrectionLevel: 'H',
         type: 'image/png',
-        quality: 0.95,
         margin: 2,
         width: 300,
         color: {

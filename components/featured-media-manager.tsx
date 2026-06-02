@@ -70,7 +70,7 @@ export function FeaturedMediaManager({ allMedia }: FeaturedMediaManagerProps) {
   }
 
   const featuredMediaIds = new Set(featuredMedia.map((f) => f.media_id))
-  const imageMedia = allMedia.filter((m) => m.media_type === 'image' && !m.deleted_at)
+  const imageMedia = allMedia.filter((m) => m.media_type === 'image')
 
   if (isLoading) {
     return (

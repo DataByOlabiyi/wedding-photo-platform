@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
-import { ArrowLeft, Loader2, Download, Trash2, Video, Checkbox } from 'lucide-react'
+import { ArrowLeft, Loader2, Download, Trash2, Video } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { createClient } from '@/lib/supabase/client'
@@ -339,7 +339,7 @@ export default function UploaderDetailsPage() {
           onNext={() => setSelectedIndex((i) => (i !== null && i < paginatedMedia.length - 1 ? i + 1 : 0))}
           hasPrevious={selectedIndex !== null && selectedIndex > 0}
           hasNext={selectedIndex !== null && selectedIndex < paginatedMedia.length - 1}
-          currentIndex={selectedIndex}
+          currentIndex={selectedIndex ?? undefined}
           totalCount={paginatedMedia.length}
         />
       )}

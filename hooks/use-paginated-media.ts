@@ -33,7 +33,7 @@ export function usePaginatedMedia() {
       if (pageNum === 0) {
         setMedia(data as MediaItem[])
       } else {
-        setMedia((prev) => [...prev, ...(data as MediaItem[])])
+        setMedia((prev: MediaItem[]) => [...prev, ...(data as MediaItem[])])
       }
       setHasMore(data.length === ITEMS_PER_PAGE)
     }
@@ -85,7 +85,7 @@ export function usePaginatedGuestMedia(guestId: string) {
         if (pageNum === 0) {
           setMedia(data as MediaItem[])
         } else {
-          setMedia((prev) => [...prev, ...(data as MediaItem[])])
+          setMedia((prev: MediaItem[]) => [...prev, ...(data as MediaItem[])])
         }
         setHasMore(data.length === ITEMS_PER_PAGE)
       }
@@ -100,10 +100,15 @@ export function usePaginatedGuestMedia(guestId: string) {
     setPage(nextPage)
   }, [page, fetchPage])
 
+  const removeMedia = useCallback((id: string) => {
+    setMedia((prev) => prev.filter((item) => item.id !== id))
+  }, [])
+
   return {
     media,
     isLoading,
     hasMore,
     loadMore,
+    removeMedia,
   }
 }

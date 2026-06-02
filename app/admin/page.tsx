@@ -1,13 +1,11 @@
 "use client"
 
-import { dynamic } from "next/dynamic"
-
 export const dynamic = "force-dynamic"
 
 import { useState, useEffect, useMemo } from "react"
 import { Download, Image as ImageIcon, Video, Loader2, ArrowLeft, LogOut, QrCode, Users, Search } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Input } from "@/components/ui/input"
 import {
@@ -139,6 +137,12 @@ export default function AdminPage() {
             <h1 className="font-serif text-xl font-semibold">Admin Dashboard</h1>
           </div>
           <div className="flex items-center gap-2">
+            <Link href="/admin/guests">
+              <Button variant="outline" className="gap-2">
+                <Users className="h-4 w-4" />
+                <span className="hidden sm:inline">Guests</span>
+              </Button>
+            </Link>
             <Link href="/admin/qr">
               <Button variant="outline" className="gap-2">
                 <QrCode className="h-4 w-4" />

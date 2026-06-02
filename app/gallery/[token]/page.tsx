@@ -86,7 +86,7 @@ export default function GalleryPage({ params }: { params: { token: string } }) {
             </p>
           </div>
 
-          <FolderGrid media={media} />
+          <FolderGrid />
         </section>
       </main>
     </div>
