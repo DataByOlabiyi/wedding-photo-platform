@@ -17,13 +17,48 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: 'BM Wedding Photo',
-  description: 'Share and view photos from our wedding celebration',
+  title: 'BM Wedding - Photo Gallery | Share Wedding Memories',
+  description: 'Share and view beautiful wedding photos from BM Wedding. Upload your favorite moments and contribute to our wedding photo gallery.',
+  keywords: 'wedding photos, photo gallery, wedding memories, photo sharing',
   manifest: '/manifest.json',
+  metadataBase: new URL('https://bm-wedding-photo.vercel.app'),
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
     title: 'BM Wedding Photo',
+  },
+  openGraph: {
+    type: 'website',
+    locale: 'en_US',
+    url: 'https://bm-wedding-photo.vercel.app',
+    title: 'BM Wedding - Photo Gallery',
+    description: 'Share and view beautiful wedding photos from BM Wedding',
+    siteName: 'BM Wedding Photo Gallery',
+    images: [
+      {
+        url: 'https://bm-wedding-photo.vercel.app/og-image.jpg',
+        width: 1200,
+        height: 630,
+        alt: 'BM Wedding Photo Gallery',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'BM Wedding - Photo Gallery',
+    description: 'Share and view beautiful wedding photos from BM Wedding',
+    images: ['https://bm-wedding-photo.vercel.app/og-image.jpg'],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
   },
 }
 
