@@ -155,22 +155,3 @@ export async function deleteGuest(guestId: string): Promise<{ success: boolean; 
   }
 }
 
-/**
- * Get RSVP statistics
- */
-export function getGuestStats(guests: Guest[]) {
-  const total = guests.length
-  const accepted = guests.filter((g) => g.rsvp_status === 'accepted').length
-  const declined = guests.filter((g) => g.rsvp_status === 'declined').length
-  const pending = total - accepted - declined
-  const withPhotos = guests.filter((g) => g.uploaded).length
-
-  return {
-    total,
-    accepted,
-    declined,
-    pending,
-    withPhotos,
-    percentage: total > 0 ? Math.round((withPhotos / total) * 100) : 0,
-  }
-}

@@ -25,10 +25,17 @@ import {
   addGuest,
   deleteGuest,
   updateGuestRsvp,
-  getGuestStats,
   type Guest,
   type RSVPStatus,
 } from "@/app/actions/rsvp-management"
+
+function getGuestStats(guests: Guest[]) {
+  const total = guests.length
+  const accepted = guests.filter((g) => g.rsvp_status === 'accepted').length
+  const declined = guests.filter((g) => g.rsvp_status === 'declined').length
+  const withPhotos = guests.filter((g) => g.uploaded).length
+  return { total, accepted, declined, pending: total - accepted - declined, withPhotos }
+}
 
 const STATUS_CONFIG: Record<RSVPStatus, { label: string; icon: React.ReactNode; color: string }> = {
   accepted: {
