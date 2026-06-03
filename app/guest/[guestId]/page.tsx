@@ -3,12 +3,14 @@
 import { useState, use } from "react"
 import Image from "next/image"
 import Link from "next/link"
-import { ArrowLeft, Download, Camera, Play, User, Plus, Loader2, Trash2 } from "lucide-react"
+import { ArrowLeft, Download, Camera, Play, User, Plus, Loader2, Trash2, Heart } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { Skeleton } from "@/components/ui/skeleton"
 import { MediaLightbox } from "@/components/media-lightbox"
 import { usePaginatedGuestMedia } from "@/hooks/use-paginated-media"
 import { downloadAsZip } from "@/lib/zip-download"
 import { guestSelfDeleteMedia } from "@/app/actions/guest-self-delete"
+import { useToast } from "@/hooks/use-toast"
 import type { MediaItem } from "@/lib/types"
 
 const DELETE_WINDOW_MS = 30 * 60 * 1000
@@ -21,6 +23,7 @@ export default function GuestPage({ params }: { params: Promise<{ guestId: strin
   const resolvedParams = use(params)
   const decodedGuestId = decodeURIComponent(resolvedParams.guestId)
   const { media: guestMedia, isLoading, removeMedia } = usePaginatedGuestMedia(decodedGuestId)
+  const { toast } = useToast()
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null)
   const [isDownloading, setIsDownloading] = useState(false)
 
@@ -31,7 +34,7 @@ export default function GuestPage({ params }: { params: Promise<{ guestId: strin
       await downloadAsZip(guestMedia, `${decodedGuestId}-photos`)
     } catch (error) {
       console.error('Download error:', error)
-      alert('Failed to download photos. Please try again.')
+      toast({ title: "Download failed", description: "Could not download photos. Please try again.", variant: "destructive" })
     } finally {
       setIsDownloading(false)
     }
@@ -43,8 +46,9 @@ export default function GuestPage({ params }: { params: Promise<{ guestId: strin
     if (result.success) {
       removeMedia(item.id)
       if (selectedIndex !== null) setSelectedIndex(null)
+      toast({ title: "Photo deleted", description: "Your photo has been removed." })
     } else {
-      alert(result.error || 'Failed to delete photo.')
+      toast({ title: "Delete failed", description: result.error || "Could not delete photo.", variant: "destructive" })
     }
   }
 
@@ -57,11 +61,24 @@ export default function GuestPage({ params }: { params: Promise<{ guestId: strin
 
   if (isLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
-        <div className="flex flex-col items-center gap-4">
-          <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-          <p className="font-serif text-lg text-muted-foreground">Loading...</p>
-        </div>
+      <div className="min-h-screen bg-background">
+        <header className="sticky top-0 z-40 border-b border-border/50 bg-background/95 backdrop-blur">
+          <div className="container mx-auto flex h-16 items-center px-4">
+            <Skeleton className="h-6 w-16" />
+          </div>
+        </header>
+        <main className="container mx-auto px-4 py-8">
+          <div className="mb-10 flex flex-col items-center gap-3">
+            <Skeleton className="h-20 w-20 rounded-full" />
+            <Skeleton className="h-8 w-48" />
+            <Skeleton className="h-4 w-32" />
+          </div>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+            {Array.from({ length: 10 }).map((_, i) => (
+              <Skeleton key={i} className="aspect-square rounded-xl" />
+            ))}
+          </div>
+        </main>
       </div>
     )
   }

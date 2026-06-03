@@ -3,6 +3,8 @@ import { Cormorant_Garamond, Inter } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import { ThemeProvider } from 'next-themes'
 import { MediaProvider } from '@/lib/media-context'
+import { Toaster } from '@/components/ui/toaster'
+import { siteConfig } from '@/lib/site-config'
 import './globals.css'
 
 const cormorant = Cormorant_Garamond({ 
@@ -17,37 +19,37 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: 'BM Wedding - Photo Gallery | Share Wedding Memories',
-  description: 'Share and view beautiful wedding photos from BM Wedding. Upload your favorite moments and contribute to our wedding photo gallery.',
+  title: `${siteConfig.weddingName} - Photo Gallery | Share Wedding Memories`,
+  description: `Share and view beautiful wedding photos from ${siteConfig.weddingName}. Upload your favorite moments and contribute to our wedding photo gallery.`,
   keywords: 'wedding photos, photo gallery, wedding memories, photo sharing',
   manifest: '/manifest.json',
-  metadataBase: new URL('https://bm-wedding-photo.vercel.app'),
+  metadataBase: new URL(siteConfig.url),
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
-    title: 'BM Wedding Photo',
+    title: `${siteConfig.weddingName} Photo`,
   },
   openGraph: {
     type: 'website',
     locale: 'en_US',
-    url: 'https://bm-wedding-photo.vercel.app',
-    title: 'BM Wedding - Photo Gallery',
-    description: 'Share and view beautiful wedding photos from BM Wedding',
-    siteName: 'BM Wedding Photo Gallery',
+    url: siteConfig.url,
+    title: `${siteConfig.weddingName} - Photo Gallery`,
+    description: `Share and view beautiful wedding photos from ${siteConfig.weddingName}`,
+    siteName: `${siteConfig.weddingName} Photo Gallery`,
     images: [
       {
-        url: 'https://bm-wedding-photo.vercel.app/og-image.jpg',
+        url: siteConfig.ogImage,
         width: 1200,
         height: 630,
-        alt: 'BM Wedding Photo Gallery',
+        alt: `${siteConfig.weddingName} Photo Gallery`,
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'BM Wedding - Photo Gallery',
-    description: 'Share and view beautiful wedding photos from BM Wedding',
-    images: ['https://bm-wedding-photo.vercel.app/og-image.jpg'],
+    title: `${siteConfig.weddingName} - Photo Gallery`,
+    description: `Share and view beautiful wedding photos from ${siteConfig.weddingName}`,
+    images: [siteConfig.ogImage],
   },
   robots: {
     index: true,
@@ -63,7 +65,7 @@ export const metadata: Metadata = {
 }
 
 export const viewport: Viewport = {
-  themeColor: '#2d9d78',
+  themeColor: '#b08040',
   width: 'device-width',
   initialScale: 1,
   maximumScale: 1,
@@ -76,12 +78,13 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className={`${cormorant.variable} ${inter.variable} dark`} suppressHydrationWarning>
+    <html lang="en" className={`${cormorant.variable} ${inter.variable}`} suppressHydrationWarning>
       <body className="font-sans antialiased">
-        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
+        <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
           <MediaProvider>
             {children}
           </MediaProvider>
+          <Toaster />
           <Analytics />
         </ThemeProvider>
       </body>

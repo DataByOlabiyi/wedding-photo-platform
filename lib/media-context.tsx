@@ -32,6 +32,7 @@ export function MediaProvider({ children }: { children: ReactNode }) {
         .select("*")
         .is("deleted_at", null)
         .order("uploaded_at", { ascending: false })
+        .limit(1000)
 
       if (fetchError) throw fetchError
       setMedia(data || [])

@@ -4,6 +4,7 @@ import Link from "next/link"
 import { Camera, Plus, Lock } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ThemeToggle } from "@/components/theme-toggle"
+import { siteConfig } from "@/lib/site-config"
 
 interface HeaderProps {
   hideUploadButton?: boolean
@@ -19,7 +20,7 @@ export function Header({ hideUploadButton }: HeaderProps) {
           </div>
           <div className="flex flex-col">
             <span className="font-serif text-xl font-semibold tracking-tight text-foreground">
-              BM Wedding
+              {siteConfig.weddingName}
             </span>
             <span className="text-[10px] uppercase tracking-widest text-muted-foreground">
               Photo Gallery

@@ -17,6 +17,8 @@ import {
 } from "@/components/ui/select"
 import { createClient } from "@/lib/supabase/client"
 import { deleteMedia } from "@/app/actions/admin-delete"
+import { useToast } from "@/hooks/use-toast"
+import { Skeleton } from "@/components/ui/skeleton"
 import { downloadAsZip, downloadByUploaderAsZip } from "@/lib/zip-download"
 import { FolderPreviewCard } from "@/components/folder-preview-card"
 import { FeaturedMediaManager } from "@/components/featured-media-manager"
@@ -28,6 +30,7 @@ type SortOption = "recent" | "alphabetical" | "most-uploads"
 
 export default function AdminPage() {
   const router = useRouter()
+  const { toast } = useToast()
   const [activeTab, setActiveTab] = useState("gallery")
   const [media, setMedia] = useState<MediaItem[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -62,11 +65,11 @@ export default function AdminPage() {
     const result = await deleteMedia(item.id)
     
     if (result.success) {
-      // Update local state
       setMedia((prev) => prev.filter((m) => m.id !== item.id))
+      toast({ title: "Deleted", description: "Media removed successfully." })
     } else {
       console.error("Delete failed:", result.error)
-      alert(`Failed to delete: ${result.error}`)
+      toast({ title: "Delete failed", description: result.error || "Could not remove media.", variant: "destructive" })
     }
 
     setDeletingId(null)
@@ -162,7 +165,7 @@ export default function AdminPage() {
 
       <main className="container mx-auto px-4 py-8">
         {/* Tabs */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <Tabs value={activeTab} onValueChange={(v) => { if (v === "guests") { router.push("/admin/guests"); return; } setActiveTab(v) }} className="w-full">
           <TabsList className="mb-8 w-full justify-start bg-transparent border-b rounded-none h-auto p-0 space-x-8">
             <TabsTrigger 
               value="gallery" 
@@ -248,16 +251,26 @@ export default function AdminPage() {
 
         {/* Grouped Media by Uploader */}
         {isLoading ? (
-          <div className="flex min-h-[300px] items-center justify-center">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="space-y-3">
+                <Skeleton className="aspect-[4/3] rounded-2xl" />
+                <Skeleton className="h-4 w-3/4" />
+                <Skeleton className="h-3 w-1/2" />
+              </div>
+            ))}
           </div>
         ) : media.length === 0 ? (
-          <div className="flex min-h-[300px] items-center justify-center">
-            <p className="text-muted-foreground">No media uploaded yet</p>
+          <div className="flex min-h-[300px] flex-col items-center justify-center gap-3 rounded-3xl border border-dashed border-border bg-card/50 py-20 text-center">
+            <div className="flex h-20 w-20 items-center justify-center rounded-full bg-primary/10">
+              <ImageIcon className="h-10 w-10 text-primary" />
+            </div>
+            <p className="font-serif text-xl font-semibold text-foreground">No media yet</p>
+            <p className="text-sm text-muted-foreground">Photos will appear here once guests start uploading</p>
           </div>
         ) : uploaders.length === 0 ? (
-          <div className="flex min-h-[300px] items-center justify-center">
-            <p className="text-muted-foreground">No uploaders found matching your search</p>
+          <div className="flex min-h-[300px] flex-col items-center justify-center gap-3 rounded-3xl border border-dashed border-border bg-card/50 py-20 text-center">
+            <p className="font-serif text-lg text-muted-foreground">No uploaders match your search</p>
           </div>
         ) : (
           <div className="space-y-8">
@@ -307,14 +320,21 @@ export default function AdminPage() {
         )}
           </TabsContent>
 
-          {/* Guests Tab */}
+          {/* Guests Tab — navigates to /admin/guests */}
           <TabsContent value="guests" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Guest Management Coming Soon</CardTitle>
-                <CardDescription>RSVP tracking and guest features will be available soon</CardDescription>
-              </CardHeader>
-            </Card>
+            <div className="flex flex-col items-center justify-center rounded-3xl border border-dashed border-border bg-card/50 py-20 text-center">
+              <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-primary/10">
+                <Users className="h-10 w-10 text-primary" />
+              </div>
+              <h3 className="font-serif text-xl font-semibold text-foreground">Guest Management</h3>
+              <p className="mt-2 text-sm text-muted-foreground">Manage your guest list and track RSVPs</p>
+              <Link href="/admin/guests" className="mt-6">
+                <Button className="rounded-full gap-2">
+                  <Users className="h-4 w-4" />
+                  Open Guest Manager
+                </Button>
+              </Link>
+            </div>
           </TabsContent>
 
           {/* Featured Media Tab */}

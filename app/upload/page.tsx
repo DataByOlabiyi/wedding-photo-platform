@@ -26,9 +26,7 @@ import { createClient } from "@/lib/supabase/client"
 import {
   compressImage,
   generateThumbnail,
-  generateVideoThumbnail,
   isImageFile,
-  isVideoFile,
   getMediaType,
 } from "@/lib/image-compression"
 import { generateImageHash, isDuplicateImage } from "@/lib/image-hash"
@@ -37,6 +35,7 @@ import { GUEST_TAGS, type GuestTag } from "@/lib/types"
 import { UploadSuccess } from "@/components/upload-success"
 import { UploadProgressBar } from "@/components/upload-progress-bar"
 import { validateUploaderName, validateGuestTag, sanitizeInput } from "@/lib/validation-schemas"
+import { useToast } from "@/hooks/use-toast"
 
 interface UploadStatus {
   file: File
@@ -47,11 +46,11 @@ interface UploadStatus {
 }
 
 const MAX_FILE_SIZE_MB = 50
-const MAX_FILES = 10
-const MAX_VIDEOS = 5
+const MAX_FILES = 20
 
 export default function UploadPage() {
   const router = useRouter()
+  const { toast } = useToast()
   const [step, setStep] = useState<"info" | "upload" | "success">("info")
   const [guestName, setGuestName] = useState("")
   const [guestId, setGuestId] = useState("")
@@ -68,7 +67,7 @@ export default function UploadPage() {
     // Validate uploader name
     const nameValidation = validateUploaderName(guestName)
     if (!nameValidation.valid) {
-      alert(nameValidation.error || "Invalid name")
+      toast({ title: "Invalid name", description: nameValidation.error || "Please enter a valid name.", variant: "destructive" })
       return
     }
 
@@ -76,7 +75,7 @@ export default function UploadPage() {
     if (guestTag) {
       const tagValidation = validateGuestTag(guestTag)
       if (!tagValidation.valid) {
-        alert(tagValidation.error || "Invalid tag")
+        toast({ title: "Invalid tag", description: tagValidation.error || "Please select a valid tag.", variant: "destructive" })
         return
       }
     }
@@ -146,26 +145,17 @@ export default function UploadPage() {
           thumbnailBlob = await generateThumbnail(file)
         }
 
-        if (isVideoFile(file)) {
-          try {
-            thumbnailBlob = await generateVideoThumbnail(file)
-          } catch {
-            // Video thumbnail generation may fail on some browsers
-          }
-        }
-
         updateUploadStatus(index, { progress: 30 })
         updateUploadStatus(index, { status: "uploading", progress: 40 })
 
         const timestamp = Date.now()
-        const ext = isVideoFile(file) ? "mp4" : "jpg"
-        const fileName = `${timestamp}-${Math.random().toString(36).substring(7)}.${ext}`
+        const fileName = `${timestamp}-${Math.random().toString(36).substring(7)}.jpg`
         const filePath = `uploads/${fileName}`
 
         const { error: uploadError } = await supabase.storage
           .from("wedding-media")
           .upload(filePath, fileToUpload, {
-            contentType: isVideoFile(file) ? file.type : "image/jpeg",
+            contentType: "image/jpeg",
             cacheControl: "3600",
           })
 
@@ -253,39 +243,19 @@ export default function UploadPage() {
 
   const processFiles = useCallback(
     async (files: File[]) => {
-      const errors: string[] = []
-      
-      // Check video count limit
-      const currentVideoCount = uploads.filter(
-        (u) => isVideoFile(u.file)
-      ).length
-      const newVideos = files.filter((f) => isVideoFile(f)).length
-
-      if (currentVideoCount + newVideos > MAX_VIDEOS) {
-        errors.push(`You can only upload a maximum of ${MAX_VIDEOS} videos. You already have ${currentVideoCount} video(s).`)
-      }
-
-      const validFiles = files.filter((file) => {
-        if (!isImageFile(file) && !isVideoFile(file)) return false
+        const validFiles = files.filter((file) => {
+        if (!isImageFile(file)) return false
         if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) return false
         return true
       }).slice(0, MAX_FILES)
 
       if (validFiles.length === 0) {
-        const msg = errors.length > 0 
-          ? errors.join("\n") 
-          : "No valid files selected. Please choose images or videos under 50MB."
-        alert(msg)
-        return
-      }
-      
-      if (errors.length > 0) {
-        alert(errors.join("\n"))
+        toast({ title: "No valid files", description: "Please choose images under 50MB.", variant: "destructive" })
         return
       }
 
       if (uploads.length + validFiles.length > MAX_FILES) {
-        alert(`Maximum ${MAX_FILES} files allowed`)
+        toast({ title: "Too many files", description: `Maximum ${MAX_FILES} files allowed.`, variant: "destructive" })
         return
       }
 
@@ -308,7 +278,7 @@ export default function UploadPage() {
         const rateCheckData = await rateCheckResponse.json()
         
         if (!rateCheckData.allowed) {
-          alert('Rate limit exceeded. You have reached the maximum number of uploads per hour (30 files). Please try again later.')
+          toast({ title: "Upload limit reached", description: "You've reached the maximum uploads per hour (30 files). Please try again later.", variant: "destructive" })
           setIsUploading(false)
           return
         }
@@ -538,7 +508,7 @@ export default function UploadPage() {
               <input
                 ref={fileInputRef}
                 type="file"
-                accept="image/*,video/*"
+                accept="image/*"
                 multiple
                 onChange={handleFileSelect}
                 className="absolute inset-0 cursor-pointer opacity-0"
@@ -554,13 +524,13 @@ export default function UploadPage() {
                   }`} />
                 </div>
                 <h3 className="font-serif text-xl font-semibold text-foreground">
-                  {isDragging ? "Drop to upload" : "Add Photos & Videos"}
+                  {isDragging ? "Drop to upload" : "Add Photos"}
                 </h3>
                 <p className="mt-2 text-sm text-muted-foreground">
                   Drag and drop or tap to select
                 </p>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  Up to {MAX_FILES} files, max {MAX_FILE_SIZE_MB}MB each
+                  Photos only · Up to {MAX_FILES} files · Max {MAX_FILE_SIZE_MB}MB each
                 </p>
               </div>
             </div>

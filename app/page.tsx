@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { Plus } from "lucide-react"
+import { Plus, Heart } from "lucide-react"
 import { useMedia } from "@/lib/media-context"
 import { Header } from "@/components/header"
 import { Hero } from "@/components/hero"
@@ -17,9 +17,9 @@ export default function HomePage() {
   if (isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
-        <div className="flex flex-col items-center gap-4">
-          <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-          <p className="font-serif text-lg text-muted-foreground">Loading...</p>
+        <div className="flex flex-col items-center gap-3">
+          <Heart className="h-8 w-8 animate-pulse text-primary" />
+          <p className="font-serif text-lg text-muted-foreground">Loading memories…</p>
         </div>
       </div>
     )

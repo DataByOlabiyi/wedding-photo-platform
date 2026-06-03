@@ -1,6 +1,7 @@
 "use client"
 
 import { Heart } from "lucide-react"
+import { siteConfig } from "@/lib/site-config"
 
 interface HeroProps {
   totalPhotos: number
@@ -27,10 +28,10 @@ export function Hero({ totalPhotos, totalGuests }: HeroProps) {
         </div>
         
         <h1 className="font-serif text-4xl font-light tracking-tight text-foreground sm:text-5xl md:text-6xl">
-          <span className="block text-balance">Our Wedding</span>
-          <span className="block text-balance mt-1 text-primary">Memories</span>
+          <span className="block text-balance">{siteConfig.coupleNames}</span>
+          <span className="block text-balance mt-1 text-primary">Wedding Memories</span>
         </h1>
-        
+
         <p className="mx-auto mt-4 max-w-md text-base text-muted-foreground sm:mt-6 sm:text-lg">
           A collection of beautiful moments captured by our beloved guests
         </p>
