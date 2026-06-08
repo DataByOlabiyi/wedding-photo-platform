@@ -5,6 +5,7 @@ import { Plus, Heart } from "lucide-react"
 import { useMedia } from "@/lib/media-context"
 import { Header } from "@/components/header"
 import { Hero } from "@/components/hero"
+import { FeaturedSlideshow } from "@/components/featured-slideshow"
 import { FolderGrid } from "@/components/folder-grid"
 
 export default function HomePage() {
@@ -32,6 +33,11 @@ export default function HomePage() {
       <main>
         {/* Hero Section */}
         <Hero totalPhotos={totalPhotos} totalGuests={totalGuests} />
+
+        {/* Featured Slideshow */}
+        <div className="container mx-auto px-4 pt-8">
+          <FeaturedSlideshow />
+        </div>
 
         {/* Gallery Section */}
         <section className="container mx-auto px-4 py-12">
