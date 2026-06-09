@@ -4,13 +4,15 @@ import { jwtVerify } from 'jose'
 const JWT_SECRET_KEY = process.env.JWT_SECRET
 const JWT_SECRET = new TextEncoder().encode(JWT_SECRET_KEY || '')
 
+const DEPLOYED_AT = process.env.DEPLOYED_AT
+  ? Math.floor(new Date(process.env.DEPLOYED_AT).getTime() / 1000)
+  : 0
+
 export async function middleware(request: NextRequest) {
-  // Allow access to /admin/login without authentication
   if (request.nextUrl.pathname === '/admin/login') {
     return NextResponse.next()
   }
 
-  // Protect other /admin routes
   if (request.nextUrl.pathname.startsWith('/admin')) {
     const token = request.cookies.get('admin_token')?.value
 
@@ -19,16 +21,18 @@ export async function middleware(request: NextRequest) {
     }
 
     try {
-      // Verify JWT token
       if (!JWT_SECRET_KEY) {
-        console.error('[v0] Middleware error: JWT_SECRET not set')
         return NextResponse.redirect(new URL('/admin/login', request.url))
       }
-      
-      await jwtVerify(token, JWT_SECRET)
+
+      const { payload } = await jwtVerify(token, JWT_SECRET)
+
+      if (DEPLOYED_AT && typeof payload.deployedAt === 'number' && payload.deployedAt < DEPLOYED_AT) {
+        return NextResponse.redirect(new URL('/admin/login', request.url))
+      }
+
       return NextResponse.next()
-    } catch (error) {
-      console.error('[v0] Token verification failed:', error)
+    } catch {
       return NextResponse.redirect(new URL('/admin/login', request.url))
     }
   }

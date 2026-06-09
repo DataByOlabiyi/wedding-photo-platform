@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { createClient } from '@/lib/supabase/client'
 import { deleteMedia } from '@/app/actions/admin-delete'
-import { downloadByUploaderAsZip } from '@/lib/zip-download'
+import { downloadUploaderZip } from '@/lib/zip-download'
 import { MediaLightbox } from '@/components/media-lightbox'
 import type { MediaItem } from '@/lib/types'
 import {
@@ -31,7 +31,6 @@ export default function UploaderDetailsPage() {
 
   const [media, setMedia] = useState<MediaItem[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const [isDownloading, setIsDownloading] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
@@ -71,13 +70,8 @@ export default function UploaderDetailsPage() {
     setDeletingId(null)
   }
 
-  const handleDownload = async () => {
-    setIsDownloading(true)
-    try {
-      await downloadByUploaderAsZip(media, uploaderName)
-    } finally {
-      setIsDownloading(false)
-    }
+  const handleDownload = () => {
+    downloadUploaderZip(uploaderName)
   }
 
   // Pagination logic
@@ -153,14 +147,10 @@ export default function UploaderDetailsPage() {
           </div>
           <Button
             onClick={handleDownload}
-            disabled={isDownloading || media.length === 0}
+            disabled={media.length === 0}
             className="gap-2"
           >
-            {isDownloading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Download className="h-4 w-4" />
-            )}
+            <Download className="h-4 w-4" />
             Download All
           </Button>
         </div>

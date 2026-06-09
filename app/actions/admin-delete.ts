@@ -1,17 +1,11 @@
 'use server'
 
-import { createClient } from '@/lib/supabase/server'
-import { verifyAdminToken } from '@/lib/verify-admin'
+import { createAdminClient } from '@/lib/supabase/admin'
 
 export async function deleteMedia(mediaId: string): Promise<{ success: boolean; error?: string }> {
-  // Verify admin token
-  const isAdmin = await verifyAdminToken()
-  if (!isAdmin) {
-    return { success: false, error: 'Unauthorized' }
-  }
-
   try {
-    const supabase = await createClient()
+    // createAdminClient() verifies the admin token internally — throws if unauthorized
+    const supabase = await createAdminClient()
 
     // Get the media item first to get file paths
     const { data: media, error: fetchError } = await supabase
@@ -23,6 +17,13 @@ export async function deleteMedia(mediaId: string): Promise<{ success: boolean; 
     if (fetchError || !media) {
       return { success: false, error: 'Media not found' }
     }
+
+    // Log admin action (non-fatal — table may not exist during migration)
+    await supabase.from('audit_logs').insert({
+      action: 'admin_delete',
+      media_id: mediaId,
+      metadata: { uploaded_by: media.uploaded_by, file_url: media.file_url },
+    }).then(() => {}, () => {})
 
     // Delete from storage using service role (has full permissions)
     const fileUrl = new URL(media.file_url)
@@ -49,6 +50,9 @@ export async function deleteMedia(mediaId: string): Promise<{ success: boolean; 
 
     return { success: true }
   } catch (error) {
+    if (error instanceof Error && error.message.startsWith('Unauthorized')) {
+      return { success: false, error: 'Unauthorized' }
+    }
     console.error('Delete error:', error)
     return { success: false, error: 'Failed to delete media' }
   }

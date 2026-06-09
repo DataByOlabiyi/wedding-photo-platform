@@ -1,45 +1,29 @@
 "use client"
 
 import Link from "next/link"
-import { Plus, Heart } from "lucide-react"
+import { Plus } from "lucide-react"
 import { useMedia } from "@/lib/media-context"
+import { useGuestFolders } from "@/hooks/use-guest-folders"
 import { Header } from "@/components/header"
 import { Hero } from "@/components/hero"
 import { FeaturedSlideshow } from "@/components/featured-slideshow"
 import { FolderGrid } from "@/components/folder-grid"
 
 export default function HomePage() {
-  const { media, isLoading } = useMedia()
-
-  // Calculate stats
-  const totalPhotos = media.length
-  const totalGuests = new Set(media.map((m) => m.uploaded_by)).size
-
-  if (isLoading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
-        <div className="flex flex-col items-center gap-3">
-          <Heart className="h-8 w-8 animate-pulse text-primary" />
-          <p className="font-serif text-lg text-muted-foreground">Loading memories…</p>
-        </div>
-      </div>
-    )
-  }
+  const { refreshKey } = useMedia()
+  const { stats } = useGuestFolders(refreshKey)
 
   return (
     <div className="min-h-screen bg-background">
       <Header />
-      
-      <main>
-        {/* Hero Section */}
-        <Hero totalPhotos={totalPhotos} totalGuests={totalGuests} />
 
-        {/* Featured Slideshow */}
+      <main>
+        <Hero totalPhotos={stats.totalPhotos} totalGuests={stats.totalGuests} />
+
         <div className="container mx-auto px-4 pt-8">
           <FeaturedSlideshow />
         </div>
 
-        {/* Gallery Section */}
         <section className="container mx-auto px-4 py-12">
           <div className="mb-8">
             <h2 className="font-serif text-2xl font-semibold text-foreground md:text-3xl">
@@ -49,12 +33,11 @@ export default function HomePage() {
               Click on an album to view all photos from that guest
             </p>
           </div>
-          
+
           <FolderGrid />
         </section>
       </main>
 
-      {/* Floating Add Button - Always visible */}
       <Link
         href="/upload"
         className="fixed bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 transition-all hover:scale-110 hover:shadow-xl hover:shadow-primary/40 active:scale-95 md:bottom-8 md:right-8 md:h-16 md:w-16"

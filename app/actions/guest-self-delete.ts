@@ -8,24 +8,30 @@ export async function guestSelfDeleteMedia(
   uploadedAt: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    // Check if the media was uploaded less than 30 minutes ago
     const uploadTime = new Date(uploadedAt).getTime()
-    const now = Date.now()
-    const diffMinutes = (now - uploadTime) / (1000 * 60)
+    const diffMs = Date.now() - uploadTime
+    const DELETE_WINDOW_MS = 24 * 60 * 60 * 1000 // 24 hours
 
-    if (diffMinutes > 30) {
-      return { success: false, error: 'Delete window has expired (30 minutes)' }
+    if (diffMs > DELETE_WINDOW_MS) {
+      return { success: false, error: 'Delete window has expired (24 hours)' }
     }
 
     const supabase = await createClient()
 
-    // Get the media to verify it belongs to the guest
-    const { data: media, error: fetchError } = await supabase
+    const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+    const isToken = UUID_RE.test(guestId)
+
+    // Verify the media belongs to this guest — match by token (new) or name (legacy)
+    const query = supabase
       .from('media')
       .select('*')
       .eq('id', mediaId)
-      .eq('uploaded_by', guestId)
-      .single()
+
+    const { data: media, error: fetchError } = await (
+      isToken
+        ? query.eq('guest_token', guestId)
+        : query.eq('uploaded_by', guestId)
+    ).single()
 
     if (fetchError || !media) {
       return { success: false, error: 'Media not found' }

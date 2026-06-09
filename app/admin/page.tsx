@@ -17,9 +17,9 @@ import {
 } from "@/components/ui/select"
 import { createClient } from "@/lib/supabase/client"
 import { deleteMedia } from "@/app/actions/admin-delete"
-import { useToast } from "@/hooks/use-toast"
+import { toast } from "sonner"
 import { Skeleton } from "@/components/ui/skeleton"
-import { downloadAsZip, downloadByUploaderAsZip } from "@/lib/zip-download"
+import { downloadAllZip, downloadUploaderZip } from "@/lib/zip-download"
 import { FolderPreviewCard } from "@/components/folder-preview-card"
 import { FeaturedMediaManager } from "@/components/featured-media-manager"
 import type { MediaItem } from "@/lib/types"
@@ -30,7 +30,6 @@ type SortOption = "recent" | "alphabetical" | "most-uploads"
 
 export default function AdminPage() {
   const router = useRouter()
-  const { toast } = useToast()
   const [activeTab, setActiveTab] = useState("gallery")
   const [media, setMedia] = useState<MediaItem[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -66,10 +65,10 @@ export default function AdminPage() {
     
     if (result.success) {
       setMedia((prev) => prev.filter((m) => m.id !== item.id))
-      toast({ title: "Deleted", description: "Media removed successfully." })
+      toast.success("Deleted", { description: "Media removed successfully." })
     } else {
       console.error("Delete failed:", result.error)
-      toast({ title: "Delete failed", description: result.error || "Could not remove media.", variant: "destructive" })
+      toast.error("Delete failed", { description: result.error || "Could not remove media." })
     }
 
     setDeletingId(null)
@@ -80,8 +79,8 @@ export default function AdminPage() {
     router.push('/')
   }
 
-  const handleDownloadAll = async () => {
-    await downloadAsZip(media, "wedding-photos")
+  const handleDownloadAll = () => {
+    downloadAllZip()
   }
 
   const photoCount = media.filter((m) => m.media_type === "image").length
@@ -278,8 +277,8 @@ export default function AdminPage() {
             <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {paginatedUploaders.map((uploaderName) => {
                 const uploaderMedia = media.filter((m) => m.uploaded_by === uploaderName)
-                const handleDownload = async () => {
-                  await downloadByUploaderAsZip(uploaderMedia, uploaderName)
+                const handleDownload = () => {
+                  downloadUploaderZip(uploaderName)
                 }
                 
                 return (

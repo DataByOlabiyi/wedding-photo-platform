@@ -6,7 +6,7 @@ import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Star, Loader2, Trash2 } from 'lucide-react'
-import { useToast } from '@/hooks/use-toast'
+import { toast } from 'sonner'
 import { addToFeatured, removeFromFeatured } from '@/app/actions/featured-media'
 import type { MediaItem } from '@/lib/types'
 
@@ -21,7 +21,6 @@ interface FeaturedItem {
 }
 
 export function FeaturedMediaManager({ allMedia }: FeaturedMediaManagerProps) {
-  const { toast } = useToast()
   const [featuredMedia, setFeaturedMedia] = useState<FeaturedItem[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
@@ -47,7 +46,7 @@ export function FeaturedMediaManager({ allMedia }: FeaturedMediaManagerProps) {
     if (result.success) {
       await fetchFeaturedMedia()
     } else {
-      toast({ title: 'Failed to add to featured', description: result.error, variant: 'destructive' })
+      toast.error('Failed to add to featured', { description: result.error })
     }
     setIsSaving(false)
   }
@@ -58,7 +57,7 @@ export function FeaturedMediaManager({ allMedia }: FeaturedMediaManagerProps) {
     if (result.success) {
       await fetchFeaturedMedia()
     } else {
-      toast({ title: 'Failed to remove from featured', description: result.error, variant: 'destructive' })
+      toast.error('Failed to remove from featured', { description: result.error })
     }
     setIsSaving(false)
   }

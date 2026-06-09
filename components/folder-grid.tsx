@@ -1,60 +1,31 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useState, useMemo } from "react"
 import Link from "next/link"
-import { Camera, ImagePlus, Loader2 } from "lucide-react"
+import { Camera, ImagePlus, Search, X } from "lucide-react"
 import { useMedia } from "@/lib/media-context"
+import { useGuestFolders } from "@/hooks/use-guest-folders"
 import { GuestFolderCard } from "@/components/guest-folder-card"
 import { Button } from "@/components/ui/button"
-import type { GuestFolder } from "@/lib/types"
+import { Input } from "@/components/ui/input"
 
 const ITEMS_PER_PAGE = 12
 
 export function FolderGrid() {
-  const { media, isLoading } = useMedia()
+  const { refreshKey } = useMedia()
+  const { guestFolders, isLoading } = useGuestFolders(refreshKey)
   const [displayCount, setDisplayCount] = useState(ITEMS_PER_PAGE)
+  const [search, setSearch] = useState("")
 
-  const guestFolders = useMemo(() => {
-    // Group media by guest
-    const folderMap = new Map<string, GuestFolder>()
-
-    media.forEach((item) => {
-      const guestId = item.uploaded_by
-      const existing = folderMap.get(guestId)
-
-      if (existing) {
-        // Update photo count
-        existing.photoCount += 1
-        
-        // Update cover image and lastUpdated if this is more recent
-        const itemDate = new Date(item.uploaded_at)
-        const existingDate = new Date(existing.lastUpdated)
-        if (itemDate > existingDate) {
-          existing.coverImage = item.thumbnail_url || item.file_url
-          existing.lastUpdated = item.uploaded_at
-          // Update guest tag if available
-          if (item.guest_tag) {
-            existing.guestTag = item.guest_tag
-          }
-        }
-      } else {
-        // Create new folder entry
-        folderMap.set(guestId, {
-          guestId,
-          guestName: item.uploaded_by,
-          guestTag: item.guest_tag || undefined,
-          photoCount: 1,
-          coverImage: item.thumbnail_url || item.file_url,
-          lastUpdated: item.uploaded_at,
-        })
-      }
-    })
-
-    // Sort by most recently updated
-    return Array.from(folderMap.values()).sort(
-      (a, b) => new Date(b.lastUpdated).getTime() - new Date(a.lastUpdated).getTime()
+  const filtered = useMemo(() => {
+    if (!search.trim()) return guestFolders
+    const q = search.toLowerCase()
+    return guestFolders.filter(
+      (f) =>
+        f.guestName.toLowerCase().includes(q) ||
+        f.guestTag?.toLowerCase().includes(q)
     )
-  }, [media])
+  }, [guestFolders, search])
 
   if (isLoading) {
     return (
@@ -77,9 +48,7 @@ export function FolderGrid() {
         <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-primary/10">
           <Camera className="h-10 w-10 text-primary" />
         </div>
-        <h3 className="font-serif text-2xl font-semibold text-foreground">
-          No Photos Yet
-        </h3>
+        <h3 className="font-serif text-2xl font-semibold text-foreground">No Photos Yet</h3>
         <p className="mx-auto mt-2 max-w-sm text-muted-foreground">
           Be the first to share your memories from our special day.
         </p>
@@ -93,28 +62,58 @@ export function FolderGrid() {
     )
   }
 
-  const displayedFolders = guestFolders.slice(0, displayCount)
-  const hasMore = displayCount < guestFolders.length
+  const displayed = filtered.slice(0, displayCount)
+  const hasMore = displayCount < filtered.length
 
   return (
-    <div className="space-y-8">
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {displayedFolders.map((folder) => (
-          <GuestFolderCard key={folder.guestId} folder={folder} />
-        ))}
-      </div>
-      
-      {hasMore && (
-        <div className="flex justify-center">
-          <Button
-            onClick={() => setDisplayCount((prev) => prev + ITEMS_PER_PAGE)}
-            variant="outline"
-            className="gap-2 rounded-full px-8"
-            size="lg"
+    <div className="space-y-6">
+      {/* Search bar */}
+      <div className="relative max-w-sm">
+        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <Input
+          placeholder="Search by name or relationship…"
+          value={search}
+          onChange={(e) => { setSearch(e.target.value); setDisplayCount(ITEMS_PER_PAGE) }}
+          className="pl-9 pr-9 rounded-full"
+        />
+        {search && (
+          <button
+            onClick={() => setSearch("")}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
           >
-            <span>Load More Albums</span>
-          </Button>
+            <X className="h-4 w-4" />
+          </button>
+        )}
+      </div>
+
+      {filtered.length === 0 ? (
+        <div className="flex min-h-[200px] flex-col items-center justify-center rounded-3xl border border-dashed border-border bg-card/50 py-12 text-center">
+          <p className="text-muted-foreground">No albums match &ldquo;{search}&rdquo;</p>
+          <button onClick={() => setSearch("")} className="mt-2 text-sm text-primary hover:underline">
+            Clear search
+          </button>
         </div>
+      ) : (
+        <>
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {displayed.map((folder) => (
+              <GuestFolderCard key={folder.guestId} folder={folder} />
+            ))}
+          </div>
+
+          {hasMore && (
+            <div className="flex justify-center">
+              <Button
+                onClick={() => setDisplayCount((prev) => prev + ITEMS_PER_PAGE)}
+                variant="outline"
+                className="gap-2 rounded-full px-8"
+                size="lg"
+              >
+                Load More Albums
+              </Button>
+            </div>
+          )}
+        </>
       )}
     </div>
   )

@@ -1,50 +1,44 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Image from "next/image"
-import { Play, Download, Heart, Loader2 } from "lucide-react"
+import { Play, Heart, Loader2 } from "lucide-react"
 import { useMedia } from "@/lib/media-context"
 import { MediaLightbox } from "@/components/media-lightbox"
+import { createClient } from "@/lib/supabase/client"
 import type { MediaItem } from "@/lib/types"
 
 export function MediaGrid() {
-  const { media, isLoading, error } = useMedia()
-  const [selectedMedia, setSelectedMedia] = useState<MediaItem | null>(null)
-  const [selectedIndex, setSelectedIndex] = useState(0)
+  const { refreshKey } = useMedia()
+  const [media, setMedia] = useState<MediaItem[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null)
 
-  const handleMediaClick = (item: MediaItem, index: number) => {
-    setSelectedMedia(item)
-    setSelectedIndex(index)
-  }
+  useEffect(() => {
+    const supabase = createClient()
+    supabase
+      .from("media")
+      .select("*")
+      .is("deleted_at", null)
+      .order("uploaded_at", { ascending: false })
+      .then(({ data }) => {
+        if (data) setMedia(data)
+        setIsLoading(false)
+      })
+  }, [refreshKey])
 
-  const handleClose = () => {
-    setSelectedMedia(null)
-  }
+  const handleClose = () => setSelectedIndex(null)
 
-  const handlePrevious = () => {
-    const newIndex = selectedIndex > 0 ? selectedIndex - 1 : media.length - 1
-    setSelectedIndex(newIndex)
-    setSelectedMedia(media[newIndex])
-  }
+  const handlePrevious = () =>
+    setSelectedIndex((i) => (i !== null && i > 0 ? i - 1 : media.length - 1))
 
-  const handleNext = () => {
-    const newIndex = selectedIndex < media.length - 1 ? selectedIndex + 1 : 0
-    setSelectedIndex(newIndex)
-    setSelectedMedia(media[newIndex])
-  }
+  const handleNext = () =>
+    setSelectedIndex((i) => (i !== null && i < media.length - 1 ? i + 1 : 0))
 
   if (isLoading) {
     return (
       <div className="flex min-h-[400px] items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    )
-  }
-
-  if (error) {
-    return (
-      <div className="flex min-h-[400px] items-center justify-center">
-        <p className="text-muted-foreground">Unable to load media. Please try again.</p>
       </div>
     )
   }
@@ -65,6 +59,8 @@ export function MediaGrid() {
     )
   }
 
+  const selectedMedia = selectedIndex !== null ? media[selectedIndex] : null
+
   return (
     <>
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
@@ -72,7 +68,7 @@ export function MediaGrid() {
           <MediaGridItem
             key={item.id}
             item={item}
-            onClick={() => handleMediaClick(item, index)}
+            onClick={() => setSelectedIndex(index)}
           />
         ))}
       </div>
@@ -85,6 +81,8 @@ export function MediaGrid() {
           onNext={handleNext}
           hasPrevious={media.length > 1}
           hasNext={media.length > 1}
+          currentIndex={selectedIndex ?? undefined}
+          totalCount={media.length}
         />
       )}
     </>
@@ -112,8 +110,6 @@ function MediaGridItem({ item, onClick }: MediaGridItemProps) {
         className="object-cover transition-transform duration-300 group-hover:scale-105"
         sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 20vw"
       />
-      
-      {/* Video indicator */}
       {isVideo && (
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="flex h-12 w-12 items-center justify-center rounded-full bg-background/80 backdrop-blur-sm">
@@ -121,11 +117,7 @@ function MediaGridItem({ item, onClick }: MediaGridItemProps) {
           </div>
         </div>
       )}
-      
-      {/* Hover overlay */}
       <div className="absolute inset-0 bg-gradient-to-t from-foreground/60 via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-      
-      {/* Info on hover */}
       <div className="absolute bottom-0 left-0 right-0 p-2 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
         <p className="truncate text-xs font-medium text-primary-foreground">
           {item.uploaded_by}

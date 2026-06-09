@@ -54,6 +54,8 @@ export function usePaginatedMedia() {
   }
 }
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
 export function usePaginatedGuestMedia(guestId: string) {
   const [media, setMedia] = useState<MediaItem[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -61,6 +63,7 @@ export function usePaginatedGuestMedia(guestId: string) {
   const [page, setPage] = useState(0)
 
   const supabase = createClient()
+  const isToken = UUID_RE.test(guestId)
 
   // Initial load
   useEffect(() => {
@@ -73,13 +76,18 @@ export function usePaginatedGuestMedia(guestId: string) {
       const from = pageNum * ITEMS_PER_PAGE
       const to = from + ITEMS_PER_PAGE - 1
 
-      const { data, error } = await supabase
+      const query = supabase
         .from('media')
         .select('*')
-        .eq('uploaded_by', guestId)
         .is('deleted_at', null)
         .order('uploaded_at', { ascending: false })
         .range(from, to)
+
+      const { data, error } = await (
+        isToken
+          ? query.eq('guest_token', guestId)
+          : query.eq('uploaded_by', guestId)
+      )
 
       if (!error && data) {
         if (pageNum === 0) {
@@ -91,7 +99,7 @@ export function usePaginatedGuestMedia(guestId: string) {
       }
       setIsLoading(false)
     },
-    [guestId, supabase]
+    [guestId, supabase, isToken]
   )
 
   const loadMore = useCallback(async () => {

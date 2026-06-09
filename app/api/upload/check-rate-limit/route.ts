@@ -3,7 +3,12 @@ import { headers } from 'next/headers'
 
 export async function POST() {
   const headersList = await headers()
-  const ip = headersList.get('x-forwarded-for') || headersList.get('x-real-ip') || 'unknown'
+  // x-vercel-forwarded-for is set by Vercel infrastructure and cannot be spoofed
+  // by the client. Fall back to x-forwarded-for only in local dev.
+  const ip =
+    headersList.get('x-vercel-forwarded-for') ||
+    headersList.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+    'unknown'
 
   const { allowed, remaining, resetTime } = await checkUploadRateLimit(ip)
 

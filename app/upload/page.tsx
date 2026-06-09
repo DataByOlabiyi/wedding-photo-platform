@@ -35,7 +35,7 @@ import { GUEST_TAGS, type GuestTag } from "@/lib/types"
 import { UploadSuccess } from "@/components/upload-success"
 import { UploadProgressBar } from "@/components/upload-progress-bar"
 import { validateUploaderName, validateGuestTag, sanitizeInput } from "@/lib/validation-schemas"
-import { useToast } from "@/hooks/use-toast"
+import { toast } from "sonner"
 
 interface UploadStatus {
   file: File
@@ -45,29 +45,44 @@ interface UploadStatus {
   error?: string
 }
 
-const MAX_FILE_SIZE_MB = 50
+const MAX_IMAGE_SIZE_MB = 50
+const MAX_VIDEO_SIZE_MB = 500
 const MAX_FILES = 20
+
+const GUEST_TOKEN_KEY = 'guest_upload_token'
+
+function getOrCreateGuestToken(): string {
+  try {
+    const existing = localStorage.getItem(GUEST_TOKEN_KEY)
+    if (existing) return existing
+    const token = crypto.randomUUID()
+    localStorage.setItem(GUEST_TOKEN_KEY, token)
+    return token
+  } catch {
+    return crypto.randomUUID()
+  }
+}
 
 export default function UploadPage() {
   const router = useRouter()
-  const { toast } = useToast()
   const [step, setStep] = useState<"info" | "upload" | "success">("info")
   const [guestName, setGuestName] = useState("")
   const [guestId, setGuestId] = useState("")
+  const [guestToken, setGuestToken] = useState("")
   const [guestTag, setGuestTag] = useState<GuestTag | "">("")
   const [uploads, setUploads] = useState<UploadStatus[]>([])
   const [isUploading, setIsUploading] = useState(false)
   const [isDragging, setIsDragging] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const { addMedia } = useMedia()
+  const { triggerRefresh } = useMedia()
 
   const handleInfoSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     // Validate uploader name
     const nameValidation = validateUploaderName(guestName)
     if (!nameValidation.valid) {
-      toast({ title: "Invalid name", description: nameValidation.error || "Please enter a valid name.", variant: "destructive" })
+      toast.error("Invalid name", { description: nameValidation.error || "Please enter a valid name." })
       return
     }
 
@@ -75,14 +90,15 @@ export default function UploadPage() {
     if (guestTag) {
       const tagValidation = validateGuestTag(guestTag)
       if (!tagValidation.valid) {
-        toast({ title: "Invalid tag", description: tagValidation.error || "Please select a valid tag.", variant: "destructive" })
+        toast.error("Invalid tag", { description: tagValidation.error || "Please select a valid tag." })
         return
       }
     }
 
-    // Use sanitized name for guest ID
     const sanitizedName = sanitizeInput(guestName)
+    const token = getOrCreateGuestToken()
     setGuestId(sanitizedName)
+    setGuestToken(token)
     setStep("upload")
   }
 
@@ -101,19 +117,28 @@ export default function UploadPage() {
 
       try {
         updateUploadStatus(index, { status: "compressing", progress: 5 })
-        
+
+        // Server-side magic-byte validation — prevents MIME spoofing
+        const formData = new FormData()
+        formData.append("file", file)
+        const validateRes = await fetch("/api/upload/validate", { method: "POST", body: formData })
+        if (!validateRes.ok) {
+          const { error } = await validateRes.json()
+          throw new Error(error || "File type not allowed")
+        }
+
         // Check for duplicates if it's an image
         if (isImageFile(file)) {
           try {
             const currentHash = await generateImageHash(file)
             const { data: existingMedia } = await supabase
               .from("media")
-              .select("id, image_hash")
+              .select("id, file_hash")
               .eq("uploaded_by", guestName.trim())
 
             if (existingMedia) {
               for (const existing of existingMedia) {
-                if (existing.image_hash && isDuplicateImage(currentHash, existing.image_hash)) {
+                if (existing.file_hash && isDuplicateImage(currentHash, existing.file_hash)) {
                   throw new Error("This photo looks like a duplicate of one you already uploaded")
                 }
               }
@@ -126,7 +151,6 @@ export default function UploadPage() {
               throw hashError
             }
             // Continue if hashing fails (not critical)
-            console.log("[v0] Image hashing skipped:", hashError)
           }
         }
 
@@ -149,14 +173,16 @@ export default function UploadPage() {
         updateUploadStatus(index, { status: "uploading", progress: 40 })
 
         const timestamp = Date.now()
-        const fileName = `${timestamp}-${Math.random().toString(36).substring(7)}.jpg`
+        const isVideo = file.type.startsWith('video/')
+        const ext = isVideo ? (file.name.split('.').pop()?.toLowerCase() || 'mp4') : 'jpg'
+        const fileName = `${timestamp}-${Math.random().toString(36).substring(7)}.${ext}`
         const filePath = `uploads/${fileName}`
 
         const { error: uploadError } = await supabase.storage
           .from("wedding-media")
           .upload(filePath, fileToUpload, {
-            contentType: "image/jpeg",
-            cacheControl: "3600",
+            contentType: isVideo ? file.type : "image/jpeg",
+            cacheControl: "31536000",
           })
 
         if (uploadError) {
@@ -180,7 +206,7 @@ export default function UploadPage() {
             .from("wedding-media")
             .upload(thumbnailPath, thumbnailBlob, {
               contentType: "image/jpeg",
-              cacheControl: "3600",
+              cacheControl: "31536000",
             })
         }
 
@@ -203,8 +229,8 @@ export default function UploadPage() {
         if (isImageFile(file)) {
           try {
             imageHash = await generateImageHash(file)
-          } catch (e) {
-            console.log("[v0] Could not generate hash:", e)
+          } catch {
+            // Hash generation is non-critical; skip silently
           }
         }
 
@@ -219,7 +245,8 @@ export default function UploadPage() {
             file_size: fileToUpload.size,
             width,
             height,
-            image_hash: imageHash,
+            file_hash: imageHash,
+            guest_token: guestToken || null,
           })
           .select()
           .single()
@@ -227,7 +254,7 @@ export default function UploadPage() {
         if (dbError) throw dbError
 
         if (mediaData) {
-          addMedia(mediaData)
+          triggerRefresh()
         }
 
         updateUploadStatus(index, { status: "complete", progress: 100 })
@@ -238,24 +265,29 @@ export default function UploadPage() {
         })
       }
     },
-    [updateUploadStatus, addMedia, guestName, guestTag]
+    [updateUploadStatus, triggerRefresh, guestName, guestTag, guestToken]
   )
 
   const processFiles = useCallback(
     async (files: File[]) => {
         const validFiles = files.filter((file) => {
-        if (!isImageFile(file)) return false
-        if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) return false
+        const isImage = isImageFile(file)
+        const isVideo = file.type.startsWith('video/')
+        if (!isImage && !isVideo) return false
+        if (isImage && file.size > MAX_IMAGE_SIZE_MB * 1024 * 1024) return false
+        if (isVideo && file.size > MAX_VIDEO_SIZE_MB * 1024 * 1024) return false
         return true
       }).slice(0, MAX_FILES)
 
       if (validFiles.length === 0) {
-        toast({ title: "No valid files", description: "Please choose images under 50MB.", variant: "destructive" })
+        toast.error("No valid files", {
+          description: `Photos must be under ${MAX_IMAGE_SIZE_MB}MB. Videos must be under ${MAX_VIDEO_SIZE_MB}MB.`,
+        })
         return
       }
 
       if (uploads.length + validFiles.length > MAX_FILES) {
-        toast({ title: "Too many files", description: `Maximum ${MAX_FILES} files allowed.`, variant: "destructive" })
+        toast.error("Too many files", { description: `Maximum ${MAX_FILES} files allowed.` })
         return
       }
 
@@ -278,7 +310,7 @@ export default function UploadPage() {
         const rateCheckData = await rateCheckResponse.json()
         
         if (!rateCheckData.allowed) {
-          toast({ title: "Upload limit reached", description: "You've reached the maximum uploads per hour (30 files). Please try again later.", variant: "destructive" })
+          toast.error("Upload limit reached", { description: "You've reached the maximum uploads per hour (30 files). Please try again later." })
           setIsUploading(false)
           return
         }
@@ -352,7 +384,7 @@ export default function UploadPage() {
   if (step === "success" && allComplete) {
     return (
       <UploadSuccess
-        guestId={guestId}
+        guestId={guestToken || guestId}
         guestName={guestName}
         photoCount={uploads.length}
       />
@@ -508,7 +540,7 @@ export default function UploadPage() {
               <input
                 ref={fileInputRef}
                 type="file"
-                accept="image/*"
+                accept="image/*,video/*"
                 multiple
                 onChange={handleFileSelect}
                 className="absolute inset-0 cursor-pointer opacity-0"
@@ -530,7 +562,7 @@ export default function UploadPage() {
                   Drag and drop or tap to select
                 </p>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  Photos only · Up to {MAX_FILES} files · Max {MAX_FILE_SIZE_MB}MB each
+                  Photos &amp; videos · Up to {MAX_FILES} files · Photos max {MAX_IMAGE_SIZE_MB}MB · Videos max {MAX_VIDEO_SIZE_MB}MB
                 </p>
               </div>
             </div>

@@ -3,7 +3,7 @@ import { Cormorant_Garamond, Inter } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import { ThemeProvider } from 'next-themes'
 import { MediaProvider } from '@/lib/media-context'
-import { Toaster } from '@/components/ui/toaster'
+import { Toaster } from 'sonner'
 import { siteConfig } from '@/lib/site-config'
 import './globals.css'
 

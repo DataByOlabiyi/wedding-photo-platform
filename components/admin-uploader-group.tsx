@@ -1,11 +1,10 @@
 'use client'
 
-import { useState } from 'react'
 import Image from 'next/image'
 import { Loader2, Download, Trash2, Video, ChevronRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { downloadByUploaderAsZip } from '@/lib/zip-download'
+import { downloadUploaderZip } from '@/lib/zip-download'
 import type { MediaItem } from '@/lib/types'
 import Link from 'next/link'
 import {
@@ -34,15 +33,8 @@ export function AdminUploaderGroup({
   deletingId,
 }: AdminUploaderGroupProps) {
   const uploaderMedia = media.filter((m) => m.uploaded_by === uploaderName)
-  const [isDownloading, setIsDownloading] = useState(false)
-
-  const handleDownloadGroup = async () => {
-    setIsDownloading(true)
-    try {
-      await downloadByUploaderAsZip(uploaderMedia, uploaderName)
-    } finally {
-      setIsDownloading(false)
-    }
+  const handleDownloadGroup = () => {
+    downloadUploaderZip(uploaderName)
   }
 
   const photoCount = uploaderMedia.filter((m) => m.media_type === 'image').length
@@ -64,16 +56,11 @@ export function AdminUploaderGroup({
         <div className="flex gap-2">
           <Button
             onClick={handleDownloadGroup}
-            disabled={isDownloading}
             variant="outline"
             size="sm"
             className="gap-2"
           >
-            {isDownloading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Download className="h-4 w-4" />
-            )}
+            <Download className="h-4 w-4" />
             Download
           </Button>
           <Link href={`/admin/uploader/${encodeURIComponent(uploaderName)}`}>

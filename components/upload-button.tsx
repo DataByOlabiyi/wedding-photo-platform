@@ -41,7 +41,7 @@ export function UploadButton({ guestName }: UploadButtonProps) {
   const [uploads, setUploads] = useState<UploadStatus[]>([])
   const [isUploading, setIsUploading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const { addMedia } = useMedia()
+  const { triggerRefresh } = useMedia()
 
   const updateUploadStatus = useCallback(
     (index: number, updates: Partial<UploadStatus>) => {
@@ -150,9 +150,8 @@ export function UploadButton({ guestName }: UploadButtonProps) {
 
         if (dbError) throw dbError
 
-        // Add to local state
         if (mediaData) {
-          addMedia(mediaData)
+          triggerRefresh()
         }
 
         updateUploadStatus(index, { status: "complete", progress: 100 })
@@ -163,7 +162,7 @@ export function UploadButton({ guestName }: UploadButtonProps) {
         })
       }
     },
-    [guestName, updateUploadStatus, addMedia]
+    [guestName, updateUploadStatus, triggerRefresh]
   )
 
   const handleFileSelect = useCallback(
