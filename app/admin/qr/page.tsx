@@ -168,38 +168,35 @@ export default function AdminQRPage() {
           .no-print  { display: none !important; }
           .print-only { display: block; }
 
-          @page { size: A4 portrait; margin: 8mm; }
-          body { margin: 0; background: white; }
+          @page { size: A4 portrait; margin: 10mm; }
+          html, body { margin: 0; padding: 0; background: white; }
 
-          /* 3 columns × 2 rows */
+          /* 3 columns × 2 rows — exactly one A4 page */
           .tickets-page {
             display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
+            grid-template-columns: repeat(3, 1fr);
             grid-template-rows: repeat(2, 1fr);
-            gap: 4mm;
-            width: 100%;
-            height: 277mm; /* A4 height minus margins */
+            gap: 3mm;
+            width: 190mm;   /* 210mm − 2×10mm margins */
+            height: 277mm;  /* 297mm − 2×10mm margins */
+            overflow: hidden;
             box-sizing: border-box;
+            page-break-after: avoid;
           }
 
           /* Ticket card */
           .ticket {
             border: 1.5px solid #c9a86c;
-            border-radius: 5px;
+            border-radius: 4px;
             background: #faf8f5;
             font-family: 'Cormorant Garamond', Georgia, serif;
             display: flex;
             flex-direction: column;
             align-items: center;
-            padding: 4mm 3.5mm 3mm;
+            padding: 3.5mm 3mm 3mm;
             box-sizing: border-box;
-            position: relative;
-          }
-
-          /* Dashed cut guides between tickets (via outline trick) */
-          .ticket {
-            outline: 1px dashed #d4b896;
-            outline-offset: 2mm;
+            overflow: hidden;
+            break-inside: avoid;
           }
 
           /* Ornament */
@@ -208,29 +205,32 @@ export default function AdminQRPage() {
             align-items: center;
             width: 100%;
             gap: 3px;
-            margin-bottom: 2mm;
+            margin-bottom: 1.5mm;
+            flex-shrink: 0;
           }
           .t-line  { flex: 1; height: 0.5px; background: #c9a86c; }
           .t-heart { color: #c9a86c; font-size: 7pt; line-height: 1; }
 
           /* Couple name */
           .t-couple {
-            font-size: 12pt;
+            font-size: 11pt;
             font-weight: 600;
             color: #1c1810;
             letter-spacing: 0.01em;
             text-align: center;
             line-height: 1.1;
+            flex-shrink: 0;
           }
 
           /* "Wedding Memories" subtitle */
           .t-subtitle {
-            font-size: 5.5pt;
-            letter-spacing: 0.22em;
+            font-size: 5pt;
+            letter-spacing: 0.2em;
             color: #8a6a3a;
             text-transform: uppercase;
             margin-top: 1mm;
             font-weight: 500;
+            flex-shrink: 0;
           }
 
           /* Date / Occasion row */
@@ -238,9 +238,10 @@ export default function AdminQRPage() {
             display: flex;
             align-items: flex-start;
             gap: 4mm;
-            margin-top: 2.5mm;
+            margin-top: 2mm;
             width: 100%;
             justify-content: center;
+            flex-shrink: 0;
           }
           .t-sep {
             width: 0.5px;
@@ -249,15 +250,16 @@ export default function AdminQRPage() {
             margin: 1mm 0;
           }
           .t-field  { display: flex; flex-direction: column; gap: 0.5mm; }
-          .t-label  { font-size: 5pt; letter-spacing: 0.2em; color: #8a6a3a; font-weight: 500; }
-          .t-value  { font-size: 7.5pt; color: #1c1810; font-weight: 600; }
+          .t-label  { font-size: 5pt; letter-spacing: 0.18em; color: #8a6a3a; font-weight: 500; }
+          .t-value  { font-size: 7pt; color: #1c1810; font-weight: 600; }
 
           /* Horizontal rule */
           .t-divider {
             width: 100%;
             height: 0.5px;
             background: #e8d9c0;
-            margin: 2mm 0;
+            margin: 1.5mm 0;
+            flex-shrink: 0;
           }
 
           /* QR code block */
@@ -266,6 +268,7 @@ export default function AdminQRPage() {
             flex-direction: column;
             align-items: center;
             gap: 1mm;
+            flex-shrink: 0;
           }
           .t-qr-img {
             width: 24mm;
@@ -273,7 +276,7 @@ export default function AdminQRPage() {
             display: block;
           }
           .t-qr-label {
-            font-size: 5.5pt;
+            font-size: 5pt;
             letter-spacing: 0.2em;
             font-weight: 700;
             color: #c9a86c;
@@ -281,21 +284,27 @@ export default function AdminQRPage() {
 
           /* Message */
           .t-message {
-            font-size: 7pt;
+            font-size: 6.5pt;
             color: #3d2e1a;
-            line-height: 1.55;
+            line-height: 1.5;
             font-style: italic;
             text-align: center;
             margin: 0;
+            flex-shrink: 0;
           }
 
           /* URL */
           .t-url {
-            font-size: 5pt;
+            font-size: 4.5pt;
             color: #a07840;
             font-family: 'Courier New', monospace;
             margin-top: 1.5mm;
-            letter-spacing: 0.04em;
+            letter-spacing: 0.03em;
+            flex-shrink: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            max-width: 100%;
           }
         }
       `}</style>
