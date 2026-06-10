@@ -44,13 +44,13 @@ export function Header({ hideUploadButton }: HeaderProps) {
           <ThemeToggle />
           
           <Link href="/admin/login">
-            <Button 
-              size="sm" 
-              variant="outline"
-              className="gap-2"
+            <Button
+              size="icon"
+              variant="ghost"
+              className="text-muted-foreground/30 hover:text-muted-foreground/70"
+              aria-label="Admin"
             >
               <Lock className="h-4 w-4" />
-              <span className="hidden sm:inline">Admin</span>
             </Button>
           </Link>
         </div>

@@ -21,6 +21,17 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import { toast } from "sonner"
+import {
   getGuestsWithStatus,
   addGuest,
   deleteGuest,
@@ -41,17 +52,17 @@ const STATUS_CONFIG: Record<RSVPStatus, { label: string; icon: React.ReactNode; 
   accepted: {
     label: "Accepted",
     icon: <CheckCircle2 className="h-4 w-4" />,
-    color: "text-green-600",
+    color: "text-success",
   },
   declined: {
     label: "Declined",
     icon: <XCircle className="h-4 w-4" />,
-    color: "text-red-500",
+    color: "text-destructive",
   },
   pending: {
     label: "Pending",
     icon: <Clock className="h-4 w-4" />,
-    color: "text-amber-500",
+    color: "text-warning",
   },
 }
 
@@ -62,6 +73,7 @@ export default function AdminGuestsPage() {
   const [newName, setNewName] = useState("")
   const [newEmail, setNewEmail] = useState("")
   const [isPending, startTransition] = useTransition()
+  const [guestToDelete, setGuestToDelete] = useState<Guest | null>(null)
 
   useEffect(() => {
     loadGuests()
@@ -87,20 +99,24 @@ export default function AdminGuestsPage() {
         setNewName("")
         setNewEmail("")
         await loadGuests()
+        toast.success("Guest added", { description: `${newName.trim()} has been added to the list.` })
       } else {
-        alert(result.error || "Failed to add guest")
+        toast.error("Failed to add guest", { description: result.error || "Please try again." })
       }
     })
   }
 
-  const handleDelete = async (guest: Guest) => {
-    if (!confirm(`Remove ${guest.name} from the guest list?`)) return
+  const handleDeleteConfirm = () => {
+    if (!guestToDelete) return
+    const name = guestToDelete.name
     startTransition(async () => {
-      const result = await deleteGuest(guest.id)
+      const result = await deleteGuest(guestToDelete.id)
+      setGuestToDelete(null)
       if (result.success) {
-        setGuests((prev) => prev.filter((g) => g.id !== guest.id))
+        setGuests((prev) => prev.filter((g) => g.id !== guestToDelete.id))
+        toast.success("Guest removed", { description: `${name} has been removed from the list.` })
       } else {
-        alert(result.error || "Failed to delete guest")
+        toast.error("Failed to remove guest", { description: result.error || "Please try again." })
       }
     })
   }
@@ -113,7 +129,7 @@ export default function AdminGuestsPage() {
           prev.map((g) => (g.id === guest.id ? { ...g, rsvp_status: status } : g))
         )
       } else {
-        alert(result.error || "Failed to update RSVP")
+        toast.error("Failed to update RSVP", { description: result.error || "Please try again." })
       }
     })
   }
@@ -160,7 +176,7 @@ export default function AdminGuestsPage() {
               <CardTitle className="text-sm font-medium text-muted-foreground">Accepted</CardTitle>
             </CardHeader>
             <CardContent className="px-4 pb-4">
-              <p className="text-3xl font-bold text-green-600">{stats.accepted}</p>
+              <p className="text-3xl font-bold text-success">{stats.accepted}</p>
             </CardContent>
           </Card>
           <Card>
@@ -168,7 +184,7 @@ export default function AdminGuestsPage() {
               <CardTitle className="text-sm font-medium text-muted-foreground">Declined</CardTitle>
             </CardHeader>
             <CardContent className="px-4 pb-4">
-              <p className="text-3xl font-bold text-red-500">{stats.declined}</p>
+              <p className="text-3xl font-bold text-destructive">{stats.declined}</p>
             </CardContent>
           </Card>
           <Card>
@@ -277,7 +293,7 @@ export default function AdminGuestsPage() {
 
                   {/* Delete */}
                   <button
-                    onClick={() => handleDelete(guest)}
+                    onClick={() => setGuestToDelete(guest)}
                     disabled={isPending}
                     className="shrink-0 rounded-full p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-destructive"
                     aria-label={`Remove ${guest.name}`}
@@ -290,6 +306,29 @@ export default function AdminGuestsPage() {
           </div>
         )}
       </main>
+
+      {/* Delete confirmation dialog */}
+      <AlertDialog open={!!guestToDelete} onOpenChange={(open) => { if (!open) setGuestToDelete(null) }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove {guestToDelete?.name}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will remove them from the guest list. Their uploaded photos will
+              not be affected.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isPending}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              disabled={isPending}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isPending ? "Removing…" : "Remove"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

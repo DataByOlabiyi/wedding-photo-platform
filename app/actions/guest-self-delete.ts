@@ -1,11 +1,12 @@
 'use server'
 
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClientUnchecked } from '@/lib/supabase/admin'
 
 export async function guestSelfDeleteMedia(
   mediaId: string,
   guestId: string,
-  uploadedAt: string
+  uploadedAt: string,
+  sessionToken?: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const uploadTime = new Date(uploadedAt).getTime()
@@ -16,7 +17,7 @@ export async function guestSelfDeleteMedia(
       return { success: false, error: 'Delete window has expired (24 hours)' }
     }
 
-    const supabase = await createClient()
+    const supabase = createAdminClientUnchecked()
 
     const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
     const isToken = UUID_RE.test(guestId)
@@ -26,6 +27,7 @@ export async function guestSelfDeleteMedia(
       .from('media')
       .select('*')
       .eq('id', mediaId)
+      .is('deleted_at', null)
 
     const { data: media, error: fetchError } = await (
       isToken
@@ -37,22 +39,20 @@ export async function guestSelfDeleteMedia(
       return { success: false, error: 'Media not found' }
     }
 
-    // Delete from storage
-    const fileUrl = new URL(media.file_url)
-    const filePath = fileUrl.pathname.split('/').slice(-2).join('/')
-    await supabase.storage.from('wedding-media').remove([filePath])
-
-    // Delete thumbnail if exists
-    if (media.thumbnail_url) {
-      const thumbUrl = new URL(media.thumbnail_url)
-      const thumbPath = thumbUrl.pathname.split('/').slice(-2).join('/')
-      await supabase.storage.from('wedding-media').remove([thumbPath])
+    // Session token check: if the media has a guest_token, the caller must supply
+    // the matching token from their localStorage. This blocks cross-guest deletion
+    // — an attacker who knows a victim's name cannot delete their photos without
+    // also having the random UUID stored only in the victim's browser.
+    if (media.guest_token) {
+      if (!sessionToken || sessionToken !== media.guest_token) {
+        return { success: false, error: 'You can only delete photos uploaded from your own device' }
+      }
     }
 
-    // Delete from database
+    // Soft-delete: set deleted_at — hidden from gallery but recoverable by admin.
     const { error: deleteError } = await supabase
       .from('media')
-      .delete()
+      .update({ deleted_at: new Date().toISOString() })
       .eq('id', mediaId)
 
     if (deleteError) {

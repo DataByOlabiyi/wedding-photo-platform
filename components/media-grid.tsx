@@ -63,13 +63,14 @@ export function MediaGrid() {
 
   return (
     <>
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+      <div className="columns-2 gap-1 sm:columns-3 md:columns-4 lg:columns-5">
         {media.map((item, index) => (
-          <MediaGridItem
-            key={item.id}
-            item={item}
-            onClick={() => setSelectedIndex(index)}
-          />
+          <div key={item.id} className="mb-1 break-inside-avoid">
+            <MediaGridItem
+              item={item}
+              onClick={() => setSelectedIndex(index)}
+            />
+          </div>
         ))}
       </div>
 
@@ -97,11 +98,15 @@ interface MediaGridItemProps {
 function MediaGridItem({ item, onClick }: MediaGridItemProps) {
   const isVideo = item.media_type === "video"
   const thumbnailUrl = item.thumbnail_url || item.file_url
+  const aspectRatio = item.width && item.height
+    ? item.width / item.height
+    : 3 / 4
 
   return (
     <button
       onClick={onClick}
-      className="group relative aspect-square overflow-hidden rounded-lg bg-muted focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+      className="group relative w-full overflow-hidden rounded-xl bg-muted focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+      style={{ aspectRatio: aspectRatio.toString() }}
     >
       <Image
         src={thumbnailUrl}

@@ -187,6 +187,6 @@ export function isVideoFile(file: File): boolean {
   return file.type.startsWith("video/")
 }
 
-export function getMediaType(file: File): "photo" | "video" {
-  return isVideoFile(file) ? "video" : "photo"
+export function getMediaType(file: File): "image" | "video" {
+  return isVideoFile(file) ? "video" : "image"
 }

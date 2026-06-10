@@ -3,7 +3,7 @@
 export const dynamic = "force-dynamic"
 
 import { useState, useEffect, useMemo } from "react"
-import { Download, Image as ImageIcon, Video, Loader2, ArrowLeft, LogOut, QrCode, Users, Search } from "lucide-react"
+import { Download, Image as ImageIcon, Video, Loader2, ArrowLeft, LogOut, QrCode, Users, Search, Heart } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -16,6 +16,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { createClient } from "@/lib/supabase/client"
+import { siteConfig } from "@/lib/site-config"
 import { deleteMedia } from "@/app/actions/admin-delete"
 import { toast } from "sonner"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -51,9 +52,13 @@ export default function AdminPage() {
       .select("*")
       .is("deleted_at", null)
       .order("uploaded_at", { ascending: false })
+      .limit(1000)
 
     if (!error && data) {
       setMedia(data)
+      if (data.length === 1000) {
+        console.warn("Admin gallery: hit 1000-item limit. Some media may not be shown.")
+      }
     }
     setIsLoading(false)
   }
@@ -128,7 +133,7 @@ export default function AdminPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur">
+      <header className="sticky top-0 z-40 border-b border-border/40 bg-background/95 backdrop-blur">
         <div className="container mx-auto flex h-16 items-center justify-between px-4">
           <div className="flex items-center gap-4">
             <Link href="/">
@@ -136,7 +141,10 @@ export default function AdminPage() {
                 <ArrowLeft className="h-5 w-5" />
               </Button>
             </Link>
-            <h1 className="font-serif text-xl font-semibold">Admin Dashboard</h1>
+            <div className="flex items-center gap-2">
+              <Heart className="h-4 w-4 fill-primary/50 text-primary" />
+              <h1 className="font-serif text-xl font-semibold">{siteConfig.coupleNames}</h1>
+            </div>
           </div>
           <div className="flex items-center gap-2">
             <Link href="/admin/guests">
@@ -163,6 +171,23 @@ export default function AdminPage() {
       </header>
 
       <main className="container mx-auto px-4 py-8">
+        {/* Welcome banner */}
+        <div className="mb-8 rounded-2xl bg-gradient-to-r from-primary/10 via-primary/5 to-background p-6 ring-1 ring-primary/15">
+          <div className="flex items-center gap-3">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary/15">
+              <Heart className="h-6 w-6 fill-primary/60 text-primary" />
+            </div>
+            <div>
+              <p className="font-serif text-xl font-semibold text-foreground">{siteConfig.coupleNames} Wedding</p>
+              <p className="text-sm text-muted-foreground">
+                {media.length > 0
+                  ? `${media.length} memories shared by ${uploaders.length} guests`
+                  : "Your wedding gallery awaits — share the link with guests to start collecting memories"}
+              </p>
+            </div>
+          </div>
+        </div>
+
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={(v) => { if (v === "guests") { router.push("/admin/guests"); return; } setActiveTab(v) }} className="w-full">
           <TabsList className="mb-8 w-full justify-start bg-transparent border-b rounded-none h-auto p-0 space-x-8">

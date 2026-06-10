@@ -283,7 +283,7 @@ function UploadItem({ upload }: { upload: UploadStatus }) {
     pending: <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />,
     compressing: <Loader2 className="h-4 w-4 animate-spin text-primary" />,
     uploading: <Upload className="h-4 w-4 text-primary" />,
-    complete: <CheckCircle2 className="h-4 w-4 text-green-600" />,
+    complete: <CheckCircle2 className="h-4 w-4 text-success" />,
     error: <AlertCircle className="h-4 w-4 text-destructive" />,
   }
 

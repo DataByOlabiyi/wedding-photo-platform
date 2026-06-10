@@ -7,7 +7,6 @@ export async function deleteMedia(mediaId: string): Promise<{ success: boolean; 
     // createAdminClient() verifies the admin token internally — throws if unauthorized
     const supabase = await createAdminClient()
 
-    // Get the media item first to get file paths
     const { data: media, error: fetchError } = await supabase
       .from('media')
       .select('*')
@@ -18,30 +17,18 @@ export async function deleteMedia(mediaId: string): Promise<{ success: boolean; 
       return { success: false, error: 'Media not found' }
     }
 
-    // Log admin action (non-fatal — table may not exist during migration)
+    // Log admin action before mutating (non-fatal — table may not exist during migration)
     await supabase.from('audit_logs').insert({
       action: 'admin_delete',
       media_id: mediaId,
       metadata: { uploaded_by: media.uploaded_by, file_url: media.file_url },
     }).then(() => {}, () => {})
 
-    // Delete from storage using service role (has full permissions)
-    const fileUrl = new URL(media.file_url)
-    const filePath = fileUrl.pathname.split('/').slice(-2).join('/')
-
-    await supabase.storage.from('wedding-media').remove([filePath])
-
-    // Delete thumbnail if exists
-    if (media.thumbnail_url) {
-      const thumbUrl = new URL(media.thumbnail_url)
-      const thumbPath = thumbUrl.pathname.split('/').slice(-2).join('/')
-      await supabase.storage.from('wedding-media').remove([thumbPath])
-    }
-
-    // Delete from database (using service role, bypasses RLS)
+    // Soft-delete: set deleted_at timestamp — hidden from gallery but recoverable.
+    // Hard purge can be done from Supabase dashboard if truly needed.
     const { error: deleteError } = await supabase
       .from('media')
-      .delete()
+      .update({ deleted_at: new Date().toISOString() })
       .eq('id', mediaId)
 
     if (deleteError) {

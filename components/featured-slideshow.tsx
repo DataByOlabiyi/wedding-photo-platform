@@ -55,7 +55,7 @@ export function FeaturedSlideshow() {
 
   return (
     <div
-      className="relative h-96 w-full overflow-hidden rounded-lg md:h-[500px]"
+      className="relative h-96 w-full overflow-hidden rounded-2xl md:h-[500px]"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
@@ -65,7 +65,7 @@ export function FeaturedSlideshow() {
         src={currentPhoto.file_url}
         alt="Featured wedding photo"
         fill
-        className="object-cover"
+        className="object-cover object-top"
         priority
         sizes="(max-width: 768px) 100vw, 100vw"
       />

@@ -35,6 +35,7 @@ import { GUEST_TAGS, type GuestTag } from "@/lib/types"
 import { UploadSuccess } from "@/components/upload-success"
 import { UploadProgressBar } from "@/components/upload-progress-bar"
 import { validateUploaderName, validateGuestTag, sanitizeInput } from "@/lib/validation-schemas"
+import { sendUploadNotification } from "@/app/actions/send-upload-email"
 import { toast } from "sonner"
 
 interface UploadStatus {
@@ -308,7 +309,7 @@ export default function UploadPage() {
           method: 'POST',
         })
         const rateCheckData = await rateCheckResponse.json()
-        
+
         if (!rateCheckData.allowed) {
           toast.error("Upload limit reached", { description: "You've reached the maximum uploads per hour (30 files). Please try again later." })
           setIsUploading(false)
@@ -320,22 +321,24 @@ export default function UploadPage() {
       }
 
       const startIndex = uploads.length
-      // Process files in parallel with max 3 concurrent uploads
-      const concurrency = 3
-      const promises: Promise<void>[] = []
-      
-      for (let i = 0; i < validFiles.length; i++) {
-        const promise = processFile(validFiles[i], startIndex + i)
-        promises.push(promise)
-        
-        // Limit concurrency
-        if (promises.length >= concurrency) {
-          await Promise.race(promises)
-          promises.splice(promises.findIndex(p => !p), 1)
+
+      // Bounded concurrency: 3 workers each grab the next file until queue is empty.
+      // This replaces the previous broken implementation where Promise.race was used
+      // incorrectly and all files were launched simultaneously.
+      let nextFileIndex = 0
+      async function worker() {
+        while (true) {
+          const fileIndex = nextFileIndex++
+          if (fileIndex >= validFiles.length) break
+          await processFile(validFiles[fileIndex], startIndex + fileIndex)
         }
       }
-      
-      await Promise.all(promises)
+      const workers = Array.from({ length: Math.min(3, validFiles.length) }, worker)
+      await Promise.all(workers)
+
+      // Fire-and-forget upload notification — failures must not block the upload flow
+      sendUploadNotification(guestName, validFiles.length, guestToken || guestId).catch(() => {})
+
       setIsUploading(false)
     },
     [processFile, uploads.length]
@@ -531,10 +534,10 @@ export default function UploadPage() {
               onDrop={handleDrop}
               onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}
-              className={`relative cursor-pointer overflow-hidden rounded-3xl border-2 border-dashed transition-all duration-300 ${
+              className={`relative cursor-pointer overflow-hidden rounded-3xl border transition-all duration-300 ${
                 isDragging
-                  ? "border-primary bg-primary/5 scale-[1.02]"
-                  : "border-border hover:border-primary/50 hover:bg-muted/30"
+                  ? "border-primary/60 bg-primary/8 scale-[1.02] shadow-lg shadow-primary/15"
+                  : "border-border/60 bg-gradient-to-b from-primary/5 to-background hover:border-primary/40 hover:from-primary/8"
               }`}
             >
               <input
@@ -546,22 +549,29 @@ export default function UploadPage() {
                 className="absolute inset-0 cursor-pointer opacity-0"
                 disabled={isUploading}
               />
-              
+
               <div className="flex flex-col items-center justify-center py-16 text-center">
+                {/* Decorative hearts */}
+                <div className="mb-5 flex items-center gap-2">
+                  <Heart className="h-3 w-3 text-primary/30" fill="currentColor" />
+                  <Heart className={`h-5 w-5 transition-all duration-300 ${isDragging ? "text-primary scale-125" : "text-primary/60"}`} fill="currentColor" />
+                  <Heart className="h-3 w-3 text-primary/30" fill="currentColor" />
+                </div>
+
                 <div className={`mb-4 flex h-20 w-20 items-center justify-center rounded-full transition-all duration-300 ${
-                  isDragging ? "bg-primary/20 scale-110" : "bg-primary/10"
+                  isDragging ? "bg-primary/20 scale-110 shadow-lg shadow-primary/20" : "bg-primary/10"
                 }`}>
                   <Upload className={`h-10 w-10 transition-colors ${
                     isDragging ? "text-primary" : "text-primary/70"
                   }`} />
                 </div>
                 <h3 className="font-serif text-xl font-semibold text-foreground">
-                  {isDragging ? "Drop to upload" : "Add Photos"}
+                  {isDragging ? "Drop your memories here" : "Share Your Memories"}
                 </h3>
                 <p className="mt-2 text-sm text-muted-foreground">
                   Drag and drop or tap to select
                 </p>
-                <p className="mt-1 text-xs text-muted-foreground">
+                <p className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-muted/60 px-3 py-1 text-xs text-muted-foreground">
                   Photos &amp; videos · Up to {MAX_FILES} files · Photos max {MAX_IMAGE_SIZE_MB}MB · Videos max {MAX_VIDEO_SIZE_MB}MB
                 </p>
               </div>
@@ -641,9 +651,9 @@ function UploadItem({
       color: "text-primary",
     },
     complete: {
-      icon: <CheckCircle2 className="h-4 w-4 text-green-600" />,
+      icon: <CheckCircle2 className="h-4 w-4 text-success" />,
       label: "Done",
-      color: "text-green-600",
+      color: "text-success",
     },
     error: {
       icon: <AlertCircle className="h-4 w-4 text-destructive" />,
@@ -666,8 +676,8 @@ function UploadItem({
           className="h-full w-full object-cover"
         />
         {upload.status === "complete" && (
-          <div className="absolute inset-0 flex items-center justify-center bg-green-600/20">
-            <CheckCircle2 className="h-6 w-6 text-green-600" />
+          <div className="absolute inset-0 flex items-center justify-center bg-success/20">
+            <CheckCircle2 className="h-6 w-6 text-success" />
           </div>
         )}
       </div>

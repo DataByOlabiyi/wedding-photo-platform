@@ -3,9 +3,19 @@
 import { useState, use, useEffect, useRef } from "react"
 import Image from "next/image"
 import Link from "next/link"
-import { ArrowLeft, Download, Camera, Play, User, Plus, Loader2, Trash2, Clock } from "lucide-react"
+import { ArrowLeft, Download, Heart, Play, User, Plus, Loader2, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { MediaLightbox } from "@/components/media-lightbox"
 import { useSearchParams } from "next/navigation"
 import { usePaginatedGuestMedia } from "@/hooks/use-paginated-media"
@@ -15,6 +25,7 @@ import { toast } from "sonner"
 import type { MediaItem } from "@/lib/types"
 
 const DELETE_WINDOW_MS = 24 * 60 * 60 * 1000 // 24 hours, matches server action
+const GUEST_TOKEN_KEY = 'guest_upload_token'
 
 function isWithinDeleteWindow(uploadedAt: string): boolean {
   return Date.now() - new Date(uploadedAt).getTime() < DELETE_WINDOW_MS
@@ -27,7 +38,20 @@ export default function GuestPage({ params }: { params: Promise<{ guestId: strin
   const { media: guestMedia, isLoading, removeMedia } = usePaginatedGuestMedia(decodedGuestId)
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null)
   const [isDownloading, setIsDownloading] = useState(false)
+  const [mediaToDelete, setMediaToDelete] = useState<MediaItem | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [sessionToken, setSessionToken] = useState<string | null>(null)
   const deepLinkHandled = useRef(false)
+
+  // Read the guest's own upload token from localStorage (set at upload time).
+  // Only used to authorise self-deletion — never sent to other users.
+  useEffect(() => {
+    try {
+      setSessionToken(localStorage.getItem(GUEST_TOKEN_KEY))
+    } catch {
+      // localStorage unavailable (SSR or privacy mode)
+    }
+  }, [])
 
   // Open lightbox on load when ?photo=<id> is in the URL
   useEffect(() => {
@@ -54,11 +78,20 @@ export default function GuestPage({ params }: { params: Promise<{ guestId: strin
     }
   }
 
-  const handleDelete = async (item: MediaItem) => {
-    if (!confirm('Delete this photo? This cannot be undone.')) return
-    const result = await guestSelfDeleteMedia(item.id, decodedGuestId, item.uploaded_at)
+  const handleDeleteConfirm = async () => {
+    if (!mediaToDelete) return
+    setIsDeleting(true)
+    const result = await guestSelfDeleteMedia(
+      mediaToDelete.id,
+      decodedGuestId,
+      mediaToDelete.uploaded_at,
+      sessionToken ?? undefined
+    )
+    setIsDeleting(false)
+    setMediaToDelete(null)
+
     if (result.success) {
-      removeMedia(item.id)
+      removeMedia(mediaToDelete.id)
       if (selectedIndex !== null) setSelectedIndex(null)
       toast.success("Photo deleted", { description: "Your photo has been removed." })
     } else {
@@ -87,9 +120,11 @@ export default function GuestPage({ params }: { params: Promise<{ guestId: strin
             <Skeleton className="h-8 w-48" />
             <Skeleton className="h-4 w-32" />
           </div>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+          <div className="columns-2 gap-1 sm:columns-3 md:columns-4 lg:columns-5">
             {Array.from({ length: 10 }).map((_, i) => (
-              <Skeleton key={i} className="aspect-square rounded-xl" />
+              <div key={i} className="mb-1 break-inside-avoid">
+                <Skeleton className="w-full rounded-xl" style={{ aspectRatio: i % 3 === 0 ? "2/3" : i % 3 === 1 ? "4/3" : "1/1" }} />
+              </div>
             ))}
           </div>
         </main>
@@ -144,25 +179,28 @@ export default function GuestPage({ params }: { params: Promise<{ guestId: strin
           </p>
         </div>
 
-        {/* Photo Grid */}
+        {/* Photo Masonry Grid */}
         {guestMedia.length > 0 ? (
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+          <div className="columns-2 gap-1 sm:columns-3 md:columns-4 lg:columns-5">
             {guestMedia.map((item, index) => (
-              <MediaThumbnail
-                key={item.id}
-                item={item}
-                onClick={() => setSelectedIndex(index)}
-                onDelete={isWithinDeleteWindow(item.uploaded_at) ? () => handleDelete(item) : undefined}
-              />
+              <div key={item.id} className="mb-1 break-inside-avoid">
+                <MediaThumbnail
+                  item={item}
+                  onClick={() => setSelectedIndex(index)}
+                  onDelete={isWithinDeleteWindow(item.uploaded_at)
+                    ? () => setMediaToDelete(item)
+                    : undefined}
+                />
+              </div>
             ))}
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center rounded-3xl border border-dashed border-border bg-card/50 py-20 text-center">
-            <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-muted">
-              <Camera className="h-10 w-10 text-muted-foreground" />
+            <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-primary/10">
+              <Heart className="h-10 w-10 text-primary/60" />
             </div>
             <h3 className="font-serif text-2xl font-semibold text-foreground">
-              No Photos Found
+              No Photos Yet
             </h3>
             <p className="mt-2 text-muted-foreground">
               This guest hasn&apos;t shared any photos yet.
@@ -177,7 +215,7 @@ export default function GuestPage({ params }: { params: Promise<{ guestId: strin
       {/* Floating Add Button */}
       <Link
         href="/upload"
-        className="fixed bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 transition-all hover:scale-110 hover:shadow-xl hover:shadow-primary/40 active:scale-95 md:bottom-8 md:right-8 md:h-16 md:w-16"
+        className="fixed bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 transition-all hover:scale-110 hover:shadow-xl hover:shadow-primary/40 active:scale-95 md:hidden"
         aria-label="Upload photos"
       >
         <Plus className="h-7 w-7 md:h-8 md:w-8" />
@@ -195,19 +233,34 @@ export default function GuestPage({ params }: { params: Promise<{ guestId: strin
           onDeleted={(id) => { removeMedia(id); setSelectedIndex(null) }}
           currentIndex={selectedIndex}
           totalCount={guestMedia.length}
+          sessionToken={sessionToken}
         />
       )}
+
+      {/* Delete confirmation dialog */}
+      <AlertDialog open={!!mediaToDelete} onOpenChange={(open) => { if (!open) setMediaToDelete(null) }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this photo?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This photo will be removed from the gallery. Contact the couple if
+              you need it restored.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              disabled={isDeleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isDeleting ? "Deleting…" : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
-}
-
-function formatTimeRemaining(ms: number): string {
-  if (ms <= 0) return "expired"
-  const h = Math.floor(ms / 3_600_000)
-  const m = Math.floor((ms % 3_600_000) / 60_000)
-  if (h > 0) return `${h}h ${m}m left`
-  const s = Math.floor((ms % 60_000) / 1_000)
-  return `${m}m ${s}s left`
 }
 
 function MediaThumbnail({
@@ -220,23 +273,15 @@ function MediaThumbnail({
   onDelete?: () => void
 }) {
   const isVideo = item.media_type === "video"
-  const [msRemaining, setMsRemaining] = useState(
-    () => DELETE_WINDOW_MS - (Date.now() - new Date(item.uploaded_at).getTime())
-  )
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
-
-  useEffect(() => {
-    if (!onDelete || msRemaining <= 0) return
-    intervalRef.current = setInterval(() => {
-      const ms = DELETE_WINDOW_MS - (Date.now() - new Date(item.uploaded_at).getTime())
-      setMsRemaining(ms)
-      if (ms <= 0 && intervalRef.current) clearInterval(intervalRef.current)
-    }, 10_000) // update every 10 s — no need for second precision on thumbnail
-    return () => { if (intervalRef.current) clearInterval(intervalRef.current) }
-  }, [item.uploaded_at, onDelete, msRemaining])
+  const aspectRatio = item.width && item.height
+    ? item.width / item.height
+    : 3 / 4
 
   return (
-    <div className="group relative aspect-square w-full overflow-hidden rounded-xl bg-muted ring-1 ring-border/50 transition-all duration-300 hover:ring-primary/50 hover:shadow-lg">
+    <div
+      className="group relative w-full overflow-hidden rounded-xl bg-muted ring-1 ring-border/50 transition-all duration-300 hover:ring-primary/50 hover:shadow-lg"
+      style={{ aspectRatio: aspectRatio.toString() }}
+    >
       <button
         onClick={onClick}
         className="absolute inset-0 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
@@ -261,9 +306,9 @@ function MediaThumbnail({
         <div className="absolute inset-0 bg-black/0 transition-colors group-hover:bg-black/10" />
       </button>
 
-      {/* Delete button + countdown — only within delete window */}
-      {onDelete && msRemaining > 0 && (
-        <div className="absolute right-1.5 top-1.5 flex flex-col items-end gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+      {/* Delete button — shown on hover, only within delete window */}
+      {onDelete && (
+        <div className="absolute right-1.5 top-1.5 opacity-0 transition-opacity group-hover:opacity-100">
           <button
             onClick={(e) => { e.stopPropagation(); onDelete() }}
             className="flex h-7 w-7 items-center justify-center rounded-full bg-black/60 text-white hover:bg-red-600 transition-colors"
@@ -271,10 +316,6 @@ function MediaThumbnail({
           >
             <Trash2 className="h-3.5 w-3.5" />
           </button>
-          <div className="flex items-center gap-0.5 rounded-full bg-black/60 px-1.5 py-0.5">
-            <Clock className="h-2.5 w-2.5 text-white/70" />
-            <span className="text-[10px] text-white/80 whitespace-nowrap">{formatTimeRemaining(msRemaining)}</span>
-          </div>
         </div>
       )}
     </div>
