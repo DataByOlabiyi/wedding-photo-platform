@@ -140,7 +140,7 @@ export default function UploadPage() {
             if (existingMedia) {
               for (const existing of existingMedia) {
                 if (existing.file_hash && isDuplicateImage(currentHash, existing.file_hash)) {
-                  throw new Error("This photo looks like a duplicate of one you already uploaded")
+                  throw new Error("Duplicate — already uploaded")
                 }
               }
             }
@@ -271,28 +271,47 @@ export default function UploadPage() {
 
   const processFiles = useCallback(
     async (files: File[]) => {
-        const validFiles = files.filter((file) => {
+      const validFiles: File[] = []
+      const rejectedUploads: UploadStatus[] = []
+
+      for (const file of files) {
         const isImage = isImageFile(file)
         const isVideo = file.type.startsWith('video/')
-        if (!isImage && !isVideo) return false
-        if (isImage && file.size > MAX_IMAGE_SIZE_MB * 1024 * 1024) return false
-        if (isVideo && file.size > MAX_VIDEO_SIZE_MB * 1024 * 1024) return false
-        return true
-      }).slice(0, MAX_FILES)
+        if (!isImage && !isVideo) {
+          rejectedUploads.push({
+            file, preview: URL.createObjectURL(file), progress: 0,
+            status: 'error', error: 'Only photos and videos are supported',
+          })
+        } else if (isImage && file.size > MAX_IMAGE_SIZE_MB * 1024 * 1024) {
+          rejectedUploads.push({
+            file, preview: URL.createObjectURL(file), progress: 0,
+            status: 'error', error: `Photo too large — max ${MAX_IMAGE_SIZE_MB}MB`,
+          })
+        } else if (isVideo && file.size > MAX_VIDEO_SIZE_MB * 1024 * 1024) {
+          rejectedUploads.push({
+            file, preview: URL.createObjectURL(file), progress: 0,
+            status: 'error', error: `Video too large — max ${MAX_VIDEO_SIZE_MB}MB`,
+          })
+        } else {
+          validFiles.push(file)
+        }
+      }
 
-      if (validFiles.length === 0) {
-        toast.error("No valid files", {
-          description: `Photos must be under ${MAX_IMAGE_SIZE_MB}MB. Videos must be under ${MAX_VIDEO_SIZE_MB}MB.`,
+      const remainingSlots = MAX_FILES - uploads.length
+      const acceptedFiles = validFiles.slice(0, remainingSlots)
+      validFiles.slice(remainingSlots).forEach((file) => {
+        rejectedUploads.push({
+          file, preview: URL.createObjectURL(file), progress: 0,
+          status: 'error', error: `Maximum ${MAX_FILES} files allowed`,
         })
-        return
-      }
+      })
 
-      if (uploads.length + validFiles.length > MAX_FILES) {
-        toast.error("Too many files", { description: `Maximum ${MAX_FILES} files allowed.` })
-        return
+      if (rejectedUploads.length > 0) {
+        setUploads((prev) => [...prev, ...rejectedUploads])
       }
+      if (acceptedFiles.length === 0) return
 
-      const newUploads: UploadStatus[] = validFiles.map((file) => ({
+      const newUploads: UploadStatus[] = acceptedFiles.map((file) => ({
         file,
         preview: URL.createObjectURL(file),
         progress: 0,
@@ -323,21 +342,19 @@ export default function UploadPage() {
       const startIndex = uploads.length
 
       // Bounded concurrency: 3 workers each grab the next file until queue is empty.
-      // This replaces the previous broken implementation where Promise.race was used
-      // incorrectly and all files were launched simultaneously.
       let nextFileIndex = 0
       async function worker() {
         while (true) {
           const fileIndex = nextFileIndex++
-          if (fileIndex >= validFiles.length) break
-          await processFile(validFiles[fileIndex], startIndex + fileIndex)
+          if (fileIndex >= acceptedFiles.length) break
+          await processFile(acceptedFiles[fileIndex], startIndex + fileIndex)
         }
       }
-      const workers = Array.from({ length: Math.min(3, validFiles.length) }, worker)
+      const workers = Array.from({ length: Math.min(3, acceptedFiles.length) }, worker)
       await Promise.all(workers)
 
       // Fire-and-forget upload notification — failures must not block the upload flow
-      sendUploadNotification(guestName, validFiles.length, guestToken || guestId).catch(() => {})
+      sendUploadNotification(guestName, acceptedFiles.length, guestToken || guestId).catch(() => {})
 
       setIsUploading(false)
     },

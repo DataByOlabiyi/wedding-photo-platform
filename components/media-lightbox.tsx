@@ -40,6 +40,8 @@ interface MediaLightboxProps {
   currentIndex?: number
   totalCount?: number
   sessionToken?: string | null
+  /** Admin override: when provided, replaces guest self-delete (no time limit). */
+  onDelete?: (id: string) => Promise<{ success: boolean; error?: string }>
 }
 
 export function MediaLightbox({
@@ -53,8 +55,10 @@ export function MediaLightbox({
   currentIndex,
   totalCount,
   sessionToken,
+  onDelete,
 }: MediaLightboxProps) {
   const isVideo = media.media_type === "video"
+  const isAdminMode = !!onDelete
   const [isDeleting, setIsDeleting] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [msRemaining, setMsRemaining] = useState(
@@ -63,30 +67,37 @@ export function MediaLightbox({
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   useEffect(() => {
-    if (msRemaining <= 0) return
+    if (isAdminMode || msRemaining <= 0) return
     intervalRef.current = setInterval(() => {
       const ms = DELETE_WINDOW_MS - (Date.now() - new Date(media.uploaded_at).getTime())
       setMsRemaining(ms)
       if (ms <= 0 && intervalRef.current) clearInterval(intervalRef.current)
     }, 1000)
     return () => { if (intervalRef.current) clearInterval(intervalRef.current) }
-  }, [media.uploaded_at, msRemaining])
+  }, [media.uploaded_at, msRemaining, isAdminMode])
 
-  const canDelete = msRemaining > 0
+  const canDelete = isAdminMode || msRemaining > 0
 
   const handleDeleteConfirm = async () => {
     setIsDeleting(true)
     try {
-      const result = await guestSelfDeleteMedia(
-        media.id,
-        media.uploaded_by,
-        media.uploaded_at,
-        sessionToken ?? undefined
-      )
+      let result: { success: boolean; error?: string }
+      if (onDelete) {
+        result = await onDelete(media.id)
+      } else {
+        result = await guestSelfDeleteMedia(
+          media.id,
+          media.uploaded_by,
+          media.uploaded_at,
+          sessionToken ?? undefined
+        )
+      }
       if (result.success) {
         onDeleted?.(media.id)
         onClose()
-        toast.success("Photo deleted", { description: "Your photo has been removed." })
+        toast.success("Photo deleted", {
+          description: isAdminMode ? "Removed from gallery." : "Your photo has been removed.",
+        })
       } else {
         toast.error("Delete failed", { description: result.error || "Could not delete photo." })
       }
@@ -268,7 +279,7 @@ export function MediaLightbox({
                 className="h-10 w-10 rounded-full bg-destructive/20 text-white hover:bg-destructive/40"
                 onClick={() => setDeleteDialogOpen(true)}
                 disabled={isDeleting}
-                title={`Delete photo (${formatTimeRemaining(msRemaining)} remaining)`}
+                title={isAdminMode ? "Delete photo" : `Delete photo (${formatTimeRemaining(msRemaining)} remaining)`}
               >
                 <Trash2 className="h-5 w-5" />
                 <span className="sr-only">Delete</span>
@@ -283,8 +294,9 @@ export function MediaLightbox({
           <AlertDialogHeader>
             <AlertDialogTitle>Delete this photo?</AlertDialogTitle>
             <AlertDialogDescription>
-              This photo will be removed from the gallery. This action cannot be
-              undone by you — contact the couple if you need it restored.
+              {isAdminMode
+                ? "This photo will be permanently removed from the gallery."
+                : "This photo will be removed from the gallery. This action cannot be undone by you — contact the couple if you need it restored."}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
