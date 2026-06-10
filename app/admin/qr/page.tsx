@@ -96,7 +96,7 @@ export default function AdminQRPage() {
               <div className="rounded-2xl bg-primary/5 border border-primary/15 p-5 text-sm text-muted-foreground space-y-2">
                 <p className="font-medium text-foreground">Print instructions</p>
                 <ul className="list-disc list-inside space-y-1">
-                  <li>Click <strong>Print 6 Tickets</strong> — prints one A4 sheet with 6 tickets (2 columns × 3 rows)</li>
+                  <li>Click <strong>Print 6 Tickets</strong> — prints one A4 sheet with 6 tickets (3 columns × 2 rows)</li>
                   <li>Cut along the dashed lines between tickets</li>
                   <li>One ticket per guest table</li>
                 </ul>
@@ -171,12 +171,12 @@ export default function AdminQRPage() {
           @page { size: A4 portrait; margin: 8mm; }
           body { margin: 0; background: white; }
 
-          /* 2 columns × 3 rows */
+          /* 3 columns × 2 rows */
           .tickets-page {
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            grid-template-rows: repeat(3, 1fr);
-            gap: 5mm;
+            grid-template-columns: 1fr 1fr 1fr;
+            grid-template-rows: repeat(2, 1fr);
+            gap: 4mm;
             width: 100%;
             height: 277mm; /* A4 height minus margins */
             box-sizing: border-box;
@@ -191,7 +191,7 @@ export default function AdminQRPage() {
             display: flex;
             flex-direction: column;
             align-items: center;
-            padding: 4mm 5mm 3mm;
+            padding: 4mm 3.5mm 3mm;
             box-sizing: border-box;
             position: relative;
           }
@@ -215,7 +215,7 @@ export default function AdminQRPage() {
 
           /* Couple name */
           .t-couple {
-            font-size: 14pt;
+            font-size: 12pt;
             font-weight: 600;
             color: #1c1810;
             letter-spacing: 0.01em;
@@ -268,8 +268,8 @@ export default function AdminQRPage() {
             gap: 1mm;
           }
           .t-qr-img {
-            width: 26mm;
-            height: 26mm;
+            width: 24mm;
+            height: 24mm;
             display: block;
           }
           .t-qr-label {
