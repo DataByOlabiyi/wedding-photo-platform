@@ -50,7 +50,7 @@ const nextConfig = {
               "font-src 'self' https://fonts.gstatic.com",
               "img-src 'self' data: blob: https://*.supabase.co https://*.supabase.in",
               "media-src 'self' blob: https://*.supabase.co https://*.supabase.in",
-              "connect-src 'self' https://*.supabase.co https://*.supabase.in https://vitals.vercel-insights.com https://va.vercel-scripts.com",
+              "connect-src 'self' https://*.supabase.co https://*.supabase.in wss://*.supabase.co wss://*.supabase.in https://vitals.vercel-insights.com https://va.vercel-scripts.com",
               "frame-ancestors 'none'",
             ].join("; "),
           },

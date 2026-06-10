@@ -1,11 +1,11 @@
 {
-  "name": "BM Wedding Photo",
-  "short_name": "BM Wedding",
-  "description": "Share and view photos from our wedding celebration",
+  "name": "Mojirade & Olabiyi Wedding",
+  "short_name": "M&O Wedding",
+  "description": "Share and view photos from Mojirade & Olabiyi's wedding celebration",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#faf8f5",
-  "theme_color": "#2d9d78",
+  "theme_color": "#b08040",
   "orientation": "portrait-primary",
   "icons": [
     {

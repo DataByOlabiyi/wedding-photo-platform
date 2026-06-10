@@ -3,6 +3,7 @@
 import Image from "next/image"
 import Link from "next/link"
 import { Camera, User } from "lucide-react"
+import { useState } from "react"
 import type { GuestFolder } from "@/lib/types"
 
 interface GuestFolderCardProps {
@@ -10,6 +11,8 @@ interface GuestFolderCardProps {
 }
 
 export function GuestFolderCard({ folder }: GuestFolderCardProps) {
+  const [imgError, setImgError] = useState(false)
+
   const initials = folder.guestName
     .split(" ")
     .map((n) => n[0])
@@ -22,13 +25,15 @@ export function GuestFolderCard({ folder }: GuestFolderCardProps) {
       <div className="group relative overflow-hidden rounded-2xl bg-card shadow-sm ring-1 ring-border/50 transition-all duration-300 hover:shadow-xl hover:shadow-primary/25 hover:ring-primary/40 hover:-translate-y-2">
         {/* Cover Image */}
         <div className="relative aspect-[4/3] overflow-hidden bg-muted">
-          {folder.coverImage ? (
+          {folder.coverImage && !imgError ? (
             <Image
               src={folder.coverImage}
               alt={`${folder.guestName}'s photos`}
               fill
               className="object-cover transition-transform duration-500 group-hover:scale-105"
               sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+              onError={() => setImgError(true)}
+              unoptimized
             />
           ) : (
             <div className="flex h-full items-center justify-center bg-gradient-to-br from-muted to-muted/50">
