@@ -142,7 +142,7 @@ export default function AdminQRPage() {
                   <div className="t-qr-label">SCAN &amp; SHARE</div>
                 </div>
                 <div className="t-upload-notice">
-                  <span className="t-upload-primary">Upload up to <strong>50 photos/videos</strong> at a time</span>
+                  <span className="t-upload-primary">Upload up to <strong>50 photos</strong> at a time</span>
                   <span className="t-upload-secondary">For more, scan again in batches</span>
                 </div>
                 <div className="t-divider" />

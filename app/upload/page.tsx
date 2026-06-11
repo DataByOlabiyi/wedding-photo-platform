@@ -47,7 +47,6 @@ interface UploadStatus {
 }
 
 const MAX_IMAGE_SIZE_MB = 50
-const MAX_VIDEO_SIZE_MB = 500
 const MAX_FILES = 20
 
 const GUEST_TOKEN_KEY = 'guest_upload_token'
@@ -174,15 +173,13 @@ export default function UploadPage() {
         updateUploadStatus(index, { status: "uploading", progress: 40 })
 
         const timestamp = Date.now()
-        const isVideo = file.type.startsWith('video/')
-        const ext = isVideo ? (file.name.split('.').pop()?.toLowerCase() || 'mp4') : 'jpg'
-        const fileName = `${timestamp}-${Math.random().toString(36).substring(7)}.${ext}`
+        const fileName = `${timestamp}-${Math.random().toString(36).substring(7)}.jpg`
         const filePath = `uploads/${fileName}`
 
         const { error: uploadError } = await supabase.storage
           .from("wedding-media")
           .upload(filePath, fileToUpload, {
-            contentType: isVideo ? file.type : "image/jpeg",
+            contentType: "image/jpeg",
             cacheControl: "31536000",
           })
 
@@ -277,20 +274,20 @@ export default function UploadPage() {
       for (const file of files) {
         const isImage = isImageFile(file)
         const isVideo = file.type.startsWith('video/')
-        if (!isImage && !isVideo) {
+        if (isVideo) {
           rejectedUploads.push({
             file, preview: URL.createObjectURL(file), progress: 0,
-            status: 'error', error: 'Only photos and videos are supported',
+            status: 'error', error: 'Videos are not supported — photos only',
           })
-        } else if (isImage && file.size > MAX_IMAGE_SIZE_MB * 1024 * 1024) {
+        } else if (!isImage) {
+          rejectedUploads.push({
+            file, preview: URL.createObjectURL(file), progress: 0,
+            status: 'error', error: 'Only photos are supported',
+          })
+        } else if (file.size > MAX_IMAGE_SIZE_MB * 1024 * 1024) {
           rejectedUploads.push({
             file, preview: URL.createObjectURL(file), progress: 0,
             status: 'error', error: `Photo too large — max ${MAX_IMAGE_SIZE_MB}MB`,
-          })
-        } else if (isVideo && file.size > MAX_VIDEO_SIZE_MB * 1024 * 1024) {
-          rejectedUploads.push({
-            file, preview: URL.createObjectURL(file), progress: 0,
-            status: 'error', error: `Video too large — max ${MAX_VIDEO_SIZE_MB}MB`,
           })
         } else {
           validFiles.push(file)
@@ -560,7 +557,7 @@ export default function UploadPage() {
               <input
                 ref={fileInputRef}
                 type="file"
-                accept="image/*,video/*"
+                accept="image/*"
                 multiple
                 onChange={handleFileSelect}
                 className="absolute inset-0 cursor-pointer opacity-0"
@@ -589,7 +586,7 @@ export default function UploadPage() {
                   Drag and drop or tap to select
                 </p>
                 <p className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-muted/60 px-3 py-1 text-xs text-muted-foreground">
-                  Photos &amp; videos · Up to {MAX_FILES} files · Photos max {MAX_IMAGE_SIZE_MB}MB · Videos max {MAX_VIDEO_SIZE_MB}MB
+                  Photos only · Up to {MAX_FILES} files · Max {MAX_IMAGE_SIZE_MB}MB each
                 </p>
               </div>
             </div>

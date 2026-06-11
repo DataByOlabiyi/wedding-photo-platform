@@ -15,9 +15,7 @@ import { createClient } from "@/lib/supabase/client"
 import {
   compressImage,
   generateThumbnail,
-  generateVideoThumbnail,
   isImageFile,
-  isVideoFile,
   getMediaType,
 } from "@/lib/image-compression"
 import { useMedia } from "@/lib/media-context"
@@ -74,29 +72,19 @@ export function UploadButton({ guestName }: UploadButtonProps) {
           thumbnailBlob = await generateThumbnail(file)
         }
 
-        // Generate video thumbnail
-        if (isVideoFile(file)) {
-          try {
-            thumbnailBlob = await generateVideoThumbnail(file)
-          } catch {
-            // Video thumbnail generation may fail on some browsers
-          }
-        }
-
         updateUploadStatus(index, { progress: 30 })
 
         // Upload main file
         updateUploadStatus(index, { status: "uploading", progress: 40 })
-        
+
         const timestamp = Date.now()
-        const ext = isVideoFile(file) ? "mp4" : "jpg"
-        const fileName = `${timestamp}-${Math.random().toString(36).substring(7)}.${ext}`
+        const fileName = `${timestamp}-${Math.random().toString(36).substring(7)}.jpg`
         const filePath = `uploads/${fileName}`
 
         const { error: uploadError } = await supabase.storage
           .from("wedding-media")
           .upload(filePath, fileToUpload, {
-            contentType: isVideoFile(file) ? file.type : "image/jpeg",
+            contentType: "image/jpeg",
             cacheControl: "3600",
           })
 
@@ -177,17 +165,13 @@ export function UploadButton({ guestName }: UploadButtonProps) {
 
       // Filter valid files
       const validFiles = files.filter((file) => {
-        if (!isImageFile(file) && !isVideoFile(file)) {
-          return false
-        }
-        if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
-          return false
-        }
+        if (!isImageFile(file)) return false
+        if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) return false
         return true
       })
 
       if (validFiles.length === 0) {
-        alert("No valid files selected. Please choose images or videos under 50MB.")
+        alert("No valid files selected. Please choose photos under 50MB.")
         return
       }
 
@@ -242,7 +226,7 @@ export function UploadButton({ guestName }: UploadButtonProps) {
       <input
         ref={fileInputRef}
         type="file"
-        accept="image/*,video/*"
+        accept="image/*"
         multiple
         onChange={handleFileSelect}
         className="hidden"

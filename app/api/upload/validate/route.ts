@@ -56,21 +56,20 @@ export async function POST(request: Request) {
 
     if (!detected) {
       return Response.json(
-        { valid: false, error: "Unsupported file type. Please upload JPEG, PNG, GIF, WebP, HEIC, or MP4 files." },
+        { valid: false, error: "Unsupported file type. Please upload JPEG, PNG, GIF, WebP, or HEIC photos." },
+        { status: 415 }
+      )
+    }
+
+    if (detected.startsWith("video/")) {
+      return Response.json(
+        { valid: false, error: "Videos are not accepted — photos only." },
         { status: 415 }
       )
     }
 
     const declaredType = file.type.toLowerCase()
-    const isImage = detected.startsWith("image/")
-    const isVideo = detected.startsWith("video/")
-
-    // Allow if declared type and detected type agree on image vs video
-    const typeMismatch =
-      (declaredType.startsWith("image/") && isVideo) ||
-      (declaredType.startsWith("video/") && isImage)
-
-    if (typeMismatch) {
+    if (!declaredType.startsWith("image/")) {
       return Response.json(
         { valid: false, error: "File content does not match its declared type." },
         { status: 415 }

@@ -40,7 +40,7 @@ export function GuestNameModal({ onSubmit }: GuestNameModalProps) {
           </div>
           <CardTitle className="text-2xl font-serif">Welcome to Our Wedding</CardTitle>
           <CardDescription className="text-base">
-            Please enter your name to share photos and videos from our special day
+            Please enter your name to share photos from our special day
           </CardDescription>
         </CardHeader>
         <CardContent>
