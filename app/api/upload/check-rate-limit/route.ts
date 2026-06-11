@@ -16,7 +16,7 @@ export async function POST() {
     return Response.json(
       {
         error: 'Rate limit exceeded',
-        message: 'You have reached the maximum number of uploads per hour (30 files). Please try again later.',
+        message: 'You have reached the maximum number of uploads per hour (60 files). Please try again later.',
         resetTime,
       },
       { status: 429 }

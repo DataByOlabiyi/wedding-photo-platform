@@ -47,7 +47,7 @@ interface UploadStatus {
 }
 
 const MAX_IMAGE_SIZE_MB = 50
-const MAX_FILES = 20
+const MAX_FILES = 50
 
 const GUEST_TOKEN_KEY = 'guest_upload_token'
 

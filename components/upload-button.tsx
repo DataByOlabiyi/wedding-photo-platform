@@ -32,7 +32,7 @@ interface UploadStatus {
 }
 
 const MAX_FILE_SIZE_MB = 50
-const MAX_FILES = 10
+const MAX_FILES = 50
 
 export function UploadButton({ guestName }: UploadButtonProps) {
   const [isOpen, setIsOpen] = useState(false)

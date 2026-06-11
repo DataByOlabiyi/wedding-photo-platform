@@ -20,7 +20,7 @@ if (hasUpstashConfig) {
     redis,
     analytics: false,
     prefix: 'upload-rate-limit',
-    limiter: Ratelimit.slidingWindow(30, '1 h'),
+    limiter: Ratelimit.slidingWindow(60, '1 h'),
   })
 
   adminRatelimit = new Ratelimit({
@@ -52,7 +52,7 @@ export async function checkUploadRateLimit(ip: string): Promise<{ allowed: boole
       console.error('Rate limit check failed:', error)
       // Fail closed in production — do not allow if Redis is unreachable
       if (isProduction) return { allowed: false, remaining: 0 }
-      return { allowed: true, remaining: 30 }
+      return { allowed: true, remaining: 60 }
     }
   }
 
@@ -62,12 +62,12 @@ export async function checkUploadRateLimit(ip: string): Promise<{ allowed: boole
   const userLimit = inMemoryLimits.get(ip)
 
   if (userLimit && now < userLimit.resetTime) {
-    const remaining = Math.max(0, 30 - userLimit.count)
+    const remaining = Math.max(0, 60 - userLimit.count)
     return { allowed: remaining > 0, remaining, resetTime: userLimit.resetTime }
   }
 
   inMemoryLimits.set(ip, { count: 1, resetTime: now + hourMs })
-  return { allowed: true, remaining: 29, resetTime: now + hourMs }
+  return { allowed: true, remaining: 59, resetTime: now + hourMs }
 }
 
 export async function checkAdminRateLimit(ip: string): Promise<{ allowed: boolean; remaining: number }> {
