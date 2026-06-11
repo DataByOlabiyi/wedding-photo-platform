@@ -543,6 +543,31 @@ export default function UploadPage() {
               </button>
             </div>
 
+            {/* Upload guidelines */}
+            <div className="mb-6 rounded-2xl border border-border/50 bg-muted/40 px-4 py-3.5">
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-foreground/70">
+                What you can share
+              </p>
+              <ul className="space-y-1.5">
+                <li className="flex items-center gap-2 text-sm text-foreground">
+                  <span className="h-1.5 w-1.5 flex-shrink-0 rounded-full bg-primary" />
+                  Photos only — JPEG, PNG, HEIC (no videos)
+                </li>
+                <li className="flex items-center gap-2 text-sm text-foreground">
+                  <span className="h-1.5 w-1.5 flex-shrink-0 rounded-full bg-primary" />
+                  Up to <strong>{MAX_FILES} photos</strong> per upload
+                </li>
+                <li className="flex items-center gap-2 text-sm text-foreground">
+                  <span className="h-1.5 w-1.5 flex-shrink-0 rounded-full bg-primary" />
+                  Max <strong>{MAX_IMAGE_SIZE_MB} MB</strong> per photo
+                </li>
+                <li className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <span className="h-1.5 w-1.5 flex-shrink-0 rounded-full bg-primary/40" />
+                  Have more than {MAX_FILES}? Upload in multiple batches
+                </li>
+              </ul>
+            </div>
+
             {/* Drop Zone */}
             <div
               onDrop={handleDrop}

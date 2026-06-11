@@ -1,6 +1,7 @@
 "use client"
 
-import { Heart } from "lucide-react"
+import Link from "next/link"
+import { Heart, Camera } from "lucide-react"
 import { siteConfig } from "@/lib/site-config"
 
 interface HeroProps {
@@ -55,6 +56,20 @@ export function Hero({ totalPhotos, totalGuests }: HeroProps) {
               Contributors
             </div>
           </div>
+        </div>
+
+        {/* Primary CTA */}
+        <div className="mt-10 flex flex-col items-center gap-3">
+          <Link
+            href="/upload"
+            className="inline-flex items-center gap-2.5 rounded-full bg-primary px-8 py-3.5 text-base font-medium text-primary-foreground shadow-lg shadow-primary/30 transition-all duration-200 hover:scale-105 hover:shadow-xl hover:shadow-primary/40 active:scale-95"
+          >
+            <Camera className="h-5 w-5" />
+            Share Your Photos
+          </Link>
+          <p className="text-xs text-muted-foreground">
+            Took photos today? Add them to our shared album
+          </p>
         </div>
       </div>
     </section>
