@@ -169,25 +169,26 @@ export default function AdminQRPage() {
           .no-print  { display: none !important; }
           .print-only { display: block; }
 
-          @page { size: A4 portrait; margin: 10mm; }
+          /*
+           * @page margin: 0 — margins are encoded as container padding instead.
+           * This eliminates browser-margin ambiguity as the overflow root cause.
+           *
+           * Exact A4 arithmetic (no remainder, no overflow possible):
+           *   Width:  12 + 60 + 3 + 60 + 3 + 60 + 12 = 210mm ✓
+           *   Height: 10 + 137 + 3 + 137 + 10        = 297mm ✓
+           */
+          @page { size: A4 portrait; margin: 0; }
           html, body { margin: 0 !important; padding: 0 !important; background: white; }
 
-          /*
-           * 3 cols × 2 rows on one A4 page.
-           * Available: 297mm − 2×10mm = 277mm; −2mm safety buffer = 275mm.
-           * Row height: (275mm − 3mm gap) / 2 = 136mm.
-           * Col width:  (190mm − 2×3mm gap) / 3 ≈ 61.3mm (1fr).
-           */
           .tickets-page {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            grid-template-rows: repeat(2, 136mm);
+            grid-template-columns: repeat(3, 60mm);
+            grid-template-rows: repeat(2, 137mm);
             gap: 3mm;
-            width: 190mm;
-            height: 275mm;
-            overflow: hidden;
+            width: 210mm;
+            padding: 10mm 12mm;
             box-sizing: border-box;
-            page-break-inside: avoid;
+            background: white;
           }
 
           /* Ticket card — dashed border doubles as cut guide */
@@ -200,10 +201,10 @@ export default function AdminQRPage() {
             flex-direction: column;
             justify-content: space-between;
             align-items: center;
-            padding: 4mm 3.5mm 3.5mm;
+            padding: 3.5mm 3mm 3mm;
             box-sizing: border-box;
-            height: 136mm;
-            width: 100%;
+            width: 60mm;
+            height: 137mm;
             overflow: hidden;
             break-inside: avoid;
           }
@@ -279,8 +280,8 @@ export default function AdminQRPage() {
             gap: 1.5mm;
           }
           .t-qr-img {
-            width: 38mm;
-            height: 38mm;
+            width: 35mm;
+            height: 35mm;
             display: block;
           }
           .t-qr-label {
