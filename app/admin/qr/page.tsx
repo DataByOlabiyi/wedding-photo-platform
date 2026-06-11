@@ -106,56 +106,57 @@ export default function AdminQRPage() {
         </main>
       </div>
 
-      {/* ── Print Layout: 6 tickets, 2×3 grid ── */}
+      {/* ── Print Layout: 6 tickets, 3 columns × 2 rows ── */}
       {qrCode && (
         <div className="print-only tickets-page">
           {[0, 1, 2, 3, 4, 5].map((i) => (
             <div key={i} className="ticket">
 
-              {/* Ornament */}
-              <div className="t-ornament">
-                <span className="t-line" />
-                <span className="t-heart">♥</span>
-                <span className="t-line" />
-              </div>
-
-              {/* Couple name */}
-              <div className="t-couple">{siteConfig.coupleNames}</div>
-              <div className="t-subtitle">WEDDING MEMORIES</div>
-
-              {/* Date / Occasion fields */}
-              <div className="t-fields">
-                <div className="t-field">
-                  <span className="t-label">DATE</span>
-                  <span className="t-value">{siteConfig.weddingDate}</span>
+              {/* Header: ornament + name + date */}
+              <div className="t-header">
+                <div className="t-ornament">
+                  <span className="t-line" />
+                  <span className="t-heart">♥</span>
+                  <span className="t-line" />
                 </div>
-                <div className="t-sep" />
-                <div className="t-field">
-                  <span className="t-label">OCCASION</span>
-                  <span className="t-value">Wedding Celebration</span>
+                <div className="t-couple">{siteConfig.coupleNames}</div>
+                <div className="t-subtitle">WEDDING MEMORIES</div>
+                <div className="t-fields">
+                  <div className="t-field">
+                    <span className="t-label">DATE</span>
+                    <span className="t-value">{siteConfig.weddingDate}</span>
+                  </div>
+                  <div className="t-sep" />
+                  <div className="t-field">
+                    <span className="t-label">OCCASION</span>
+                    <span className="t-value">Wedding Celebration</span>
+                  </div>
                 </div>
               </div>
 
-              {/* Divider */}
-              <div className="t-divider" />
-
-              {/* QR code — centrepiece */}
-              <div className="t-qr-wrap">
-                <img src={qrCode} alt="QR" className="t-qr-img" />
-                <div className="t-qr-label">SCAN &amp; SHARE</div>
+              {/* QR section: divider + QR + upload notice + divider */}
+              <div className="t-qr-section">
+                <div className="t-divider" />
+                <div className="t-qr-wrap">
+                  <img src={qrCode} alt="QR" className="t-qr-img" />
+                  <div className="t-qr-label">SCAN &amp; SHARE</div>
+                </div>
+                <div className="t-upload-notice">
+                  <span className="t-upload-primary">Upload up to <strong>50 photos/videos</strong> at a time</span>
+                  <span className="t-upload-secondary">For more, scan again in batches</span>
+                </div>
+                <div className="t-divider" />
               </div>
 
-              {/* Divider */}
-              <div className="t-divider" />
+              {/* Footer: message + URL */}
+              <div className="t-footer">
+                <p className="t-message">
+                  You captured a moment we&apos;ll cherish forever.
+                  Scan to share your photos from today&apos;s celebration.
+                </p>
+                <div className="t-url">{galleryUrl}</div>
+              </div>
 
-              {/* Message */}
-              <p className="t-message">
-                You captured a moment we&apos;ll cherish forever.
-                Scan to share your photos from today&apos;s celebration.
-              </p>
-
-              {/* URL */}
-              <div className="t-url">{galleryUrl}</div>
             </div>
           ))}
         </div>
@@ -169,120 +170,155 @@ export default function AdminQRPage() {
           .print-only { display: block; }
 
           @page { size: A4 portrait; margin: 10mm; }
-          html, body { margin: 0; padding: 0; background: white; }
+          html, body { margin: 0 !important; padding: 0 !important; background: white; }
 
-          /* 3 columns × 2 rows — exactly one A4 page */
+          /*
+           * 3 cols × 2 rows on one A4 page.
+           * Available: 297mm − 2×10mm = 277mm; −2mm safety buffer = 275mm.
+           * Row height: (275mm − 3mm gap) / 2 = 136mm.
+           * Col width:  (190mm − 2×3mm gap) / 3 ≈ 61.3mm (1fr).
+           */
           .tickets-page {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            grid-template-rows: repeat(2, 1fr);
+            grid-template-rows: repeat(2, 136mm);
             gap: 3mm;
-            width: 190mm;   /* 210mm − 2×10mm margins */
-            height: 277mm;  /* 297mm − 2×10mm margins */
+            width: 190mm;
+            height: 275mm;
             overflow: hidden;
             box-sizing: border-box;
-            page-break-after: avoid;
+            page-break-inside: avoid;
           }
 
-          /* Ticket card */
+          /* Ticket card — dashed border doubles as cut guide */
           .ticket {
-            border: 1.5px solid #c9a86c;
-            border-radius: 4px;
+            border: 1px dashed #c9a86c;
+            border-radius: 3px;
             background: #faf8f5;
             font-family: 'Cormorant Garamond', Georgia, serif;
             display: flex;
             flex-direction: column;
+            justify-content: space-between;
             align-items: center;
-            padding: 3.5mm 3mm 3mm;
+            padding: 4mm 3.5mm 3.5mm;
             box-sizing: border-box;
+            height: 136mm;
+            width: 100%;
             overflow: hidden;
             break-inside: avoid;
           }
 
-          /* Ornament */
+          /* ── Header group ── */
+          .t-header {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+          }
+
           .t-ornament {
             display: flex;
             align-items: center;
             width: 100%;
             gap: 3px;
-            margin-bottom: 1.5mm;
-            flex-shrink: 0;
+            margin-bottom: 2mm;
           }
           .t-line  { flex: 1; height: 0.5px; background: #c9a86c; }
           .t-heart { color: #c9a86c; font-size: 7pt; line-height: 1; }
 
-          /* Couple name */
           .t-couple {
-            font-size: 11pt;
+            font-size: 11.5pt;
             font-weight: 600;
             color: #1c1810;
             letter-spacing: 0.01em;
             text-align: center;
             line-height: 1.1;
-            flex-shrink: 0;
           }
 
-          /* "Wedding Memories" subtitle */
           .t-subtitle {
             font-size: 5pt;
-            letter-spacing: 0.2em;
+            letter-spacing: 0.22em;
             color: #8a6a3a;
             text-transform: uppercase;
             margin-top: 1mm;
             font-weight: 500;
-            flex-shrink: 0;
           }
 
-          /* Date / Occasion row */
           .t-fields {
             display: flex;
             align-items: flex-start;
-            gap: 4mm;
-            margin-top: 2mm;
+            gap: 5mm;
+            margin-top: 2.5mm;
             width: 100%;
             justify-content: center;
-            flex-shrink: 0;
           }
-          .t-sep {
-            width: 0.5px;
-            background: #d4b896;
-            align-self: stretch;
-            margin: 1mm 0;
-          }
-          .t-field  { display: flex; flex-direction: column; gap: 0.5mm; }
-          .t-label  { font-size: 5pt; letter-spacing: 0.18em; color: #8a6a3a; font-weight: 500; }
-          .t-value  { font-size: 7pt; color: #1c1810; font-weight: 600; }
+          .t-sep   { width: 0.5px; background: #d4b896; align-self: stretch; margin: 1mm 0; }
+          .t-field { display: flex; flex-direction: column; gap: 0.5mm; }
+          .t-label { font-size: 5pt; letter-spacing: 0.18em; color: #8a6a3a; font-weight: 500; }
+          .t-value { font-size: 7.5pt; color: #1c1810; font-weight: 600; }
 
-          /* Horizontal rule */
+          /* ── QR section ── */
+          .t-qr-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+          }
+
           .t-divider {
             width: 100%;
             height: 0.5px;
             background: #e8d9c0;
-            margin: 1.5mm 0;
-            flex-shrink: 0;
+            margin: 2mm 0;
           }
 
-          /* QR code block */
           .t-qr-wrap {
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 1mm;
-            flex-shrink: 0;
+            gap: 1.5mm;
           }
           .t-qr-img {
-            width: 24mm;
-            height: 24mm;
+            width: 38mm;
+            height: 38mm;
             display: block;
           }
           .t-qr-label {
-            font-size: 5pt;
-            letter-spacing: 0.2em;
+            font-size: 5.5pt;
+            letter-spacing: 0.22em;
             font-weight: 700;
             color: #c9a86c;
           }
 
-          /* Message */
+          .t-upload-notice {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5mm;
+            margin-top: 2mm;
+            text-align: center;
+          }
+          .t-upload-primary {
+            font-size: 6pt;
+            color: #1c1810;
+            letter-spacing: 0.02em;
+          }
+          .t-upload-primary strong { font-weight: 700; color: #8a6a3a; }
+          .t-upload-secondary {
+            font-size: 5pt;
+            color: #a07840;
+            font-style: italic;
+          }
+
+          /* ── Footer group ── */
+          .t-footer {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1.5mm;
+            width: 100%;
+          }
+
           .t-message {
             font-size: 6.5pt;
             color: #3d2e1a;
@@ -290,17 +326,13 @@ export default function AdminQRPage() {
             font-style: italic;
             text-align: center;
             margin: 0;
-            flex-shrink: 0;
           }
 
-          /* URL */
           .t-url {
             font-size: 4.5pt;
             color: #a07840;
             font-family: 'Courier New', monospace;
-            margin-top: 1.5mm;
             letter-spacing: 0.03em;
-            flex-shrink: 0;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
