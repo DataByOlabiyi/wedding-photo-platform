@@ -1,7 +1,7 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
-import { verifyAdminToken } from '@/lib/verify-admin'
+import { requireOrg } from '@/lib/auth'
 
 export type RSVPStatus = 'pending' | 'accepted' | 'declined'
 
@@ -18,10 +18,7 @@ export interface Guest {
  * Get all guests with their RSVP and upload status
  */
 export async function getGuestsWithStatus(): Promise<{ guests: Guest[]; error?: string }> {
-  const isAdmin = await verifyAdminToken()
-  if (!isAdmin) {
-    return { guests: [], error: 'Unauthorized' }
-  }
+  await requireOrg()
 
   try {
     const supabase = await createClient()
@@ -77,10 +74,7 @@ export async function updateGuestRsvp(
   guestId: string,
   status: RSVPStatus
 ): Promise<{ success: boolean; error?: string }> {
-  const isAdmin = await verifyAdminToken()
-  if (!isAdmin) {
-    return { success: false, error: 'Unauthorized' }
-  }
+  await requireOrg()
 
   try {
     const supabase = await createClient()
@@ -107,10 +101,7 @@ export async function addGuest(
   name: string,
   email?: string
 ): Promise<{ success: boolean; error?: string; guestId?: string }> {
-  const isAdmin = await verifyAdminToken()
-  if (!isAdmin) {
-    return { success: false, error: 'Unauthorized' }
-  }
+  await requireOrg()
 
   try {
     const supabase = await createClient()
@@ -135,10 +126,7 @@ export async function addGuest(
  * Delete a guest
  */
 export async function deleteGuest(guestId: string): Promise<{ success: boolean; error?: string }> {
-  const isAdmin = await verifyAdminToken()
-  if (!isAdmin) {
-    return { success: false, error: 'Unauthorized' }
-  }
+  await requireOrg()
 
   try {
     const supabase = await createClient()

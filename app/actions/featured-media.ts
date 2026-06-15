@@ -1,11 +1,10 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
-import { verifyAdminToken } from '@/lib/verify-admin'
+import { requireOrg } from '@/lib/auth'
 
 export async function addToFeatured(mediaId: string): Promise<{ success: boolean; error?: string }> {
-  const isAdmin = await verifyAdminToken()
-  if (!isAdmin) return { success: false, error: 'Unauthorized' }
+  await requireOrg()
 
   const supabase = await createClient()
   const { error } = await supabase
@@ -17,8 +16,7 @@ export async function addToFeatured(mediaId: string): Promise<{ success: boolean
 }
 
 export async function removeFromFeatured(featuredId: string): Promise<{ success: boolean; error?: string }> {
-  const isAdmin = await verifyAdminToken()
-  if (!isAdmin) return { success: false, error: 'Unauthorized' }
+  await requireOrg()
 
   const supabase = await createClient()
   const { error } = await supabase
