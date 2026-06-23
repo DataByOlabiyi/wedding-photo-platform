@@ -4,6 +4,7 @@ export type MediaItem = {
   thumbnail_url: string | null
   media_type: "image" | "video"
   uploaded_by: string
+  event_id: string
   guest_tag: string | null
   file_size: number | null
   width: number | null
@@ -36,6 +37,17 @@ export type UploadQueueItem = {
   status: "pending" | "uploading" | "success" | "error"
   progress: number
   error?: string
+}
+
+export type RSVPStatus = 'pending' | 'accepted' | 'declined'
+
+export interface Guest {
+  id: string
+  name: string
+  email?: string | null
+  rsvp_status: RSVPStatus
+  uploaded: boolean
+  uploaded_at?: string | null
 }
 
 export const GUEST_TAGS = [

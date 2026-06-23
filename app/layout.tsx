@@ -19,36 +19,36 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: `${siteConfig.weddingName} - Photo Gallery | Share Wedding Memories`,
-  description: `Share and view beautiful wedding photos from ${siteConfig.weddingName}. Upload your favorite moments and contribute to our wedding photo gallery.`,
+  title: "SnapEvent — Wedding Photo Sharing",
+  description: "Create a private photo gallery for your event. Share a link. Guests upload directly from their phones.",
   keywords: 'wedding photos, photo gallery, wedding memories, photo sharing',
   manifest: '/manifest.json',
   metadataBase: new URL(siteConfig.url),
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
-    title: `${siteConfig.weddingName} Photo`,
+    title: "SnapEvent",
   },
   openGraph: {
     type: 'website',
     locale: 'en_US',
     url: siteConfig.url,
-    title: `${siteConfig.weddingName} - Photo Gallery`,
-    description: `Share and view beautiful wedding photos from ${siteConfig.weddingName}`,
-    siteName: `${siteConfig.weddingName} Photo Gallery`,
+    title: "SnapEvent",
+    description: "Create a private photo gallery for your event. Share a link. Guests upload directly from their phones.",
+    siteName: "SnapEvent",
     images: [
       {
         url: siteConfig.ogImage,
         width: 1200,
         height: 630,
-        alt: `${siteConfig.weddingName} Photo Gallery`,
+        alt: "SnapEvent",
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: `${siteConfig.weddingName} - Photo Gallery`,
-    description: `Share and view beautiful wedding photos from ${siteConfig.weddingName}`,
+    title: "SnapEvent",
+    description: "Create a private photo gallery for your event. Share a link. Guests upload directly from their phones.",
     images: [siteConfig.ogImage],
   },
   robots: {

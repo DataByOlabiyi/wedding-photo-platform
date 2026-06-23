@@ -11,7 +11,7 @@ export function UpgradeButton() {
   const handleUpgrade = async () => {
     setLoading(true)
     try {
-      const res = await fetch('/api/stripe/checkout', { method: 'POST' })
+      const res = await fetch('/api/paystack/checkout', { method: 'POST' })
       const { url, error } = await res.json()
       if (error || !url) throw new Error(error ?? 'Checkout unavailable')
       window.location.href = url

@@ -33,14 +33,16 @@ export async function createEvent(formData: FormData) {
     ? membership.organizations[0]
     : membership.organizations as { plan: string } | null
 
-  if (org?.plan === 'starter') {
-    const { count } = await db
-      .from('events')
-      .select('id', { count: 'exact', head: true })
-      .eq('organization_id', orgId)
+  if (process.env.NEXT_PUBLIC_BETA_FREE_PRO !== "true") {
+    if (org?.plan === 'starter') {
+      const { count } = await db
+        .from('events')
+        .select('id', { count: 'exact', head: true })
+        .eq('organization_id', orgId)
 
-    if ((count ?? 0) >= 1) {
-      return { error: 'Starter plan is limited to 1 event. Upgrade to Pro for unlimited events.' }
+      if ((count ?? 0) >= 1) {
+        return { error: 'Starter plan is limited to 1 event. Upgrade to Pro for unlimited events.' }
+      }
     }
   }
 
@@ -53,24 +55,36 @@ export async function createEvent(formData: FormData) {
   if (!parsed.success) return { error: 'Invalid input.' }
   const { eventName, coupleNames, weddingDate } = parsed.data
 
-  const eventSlug = toSlug(coupleNames + '-' + (weddingDate?.slice(0, 4) || new Date().getFullYear()))
+  const baseSlug = toSlug(coupleNames + '-' + (weddingDate?.slice(0, 4) || new Date().getFullYear()))
   const galleryToken = crypto.randomUUID()
 
-  const { data: event, error } = await db
-    .from('events')
-    .insert({
-      organization_id: orgId,
-      name: eventName,
-      slug: eventSlug,
-      couple_names: coupleNames,
-      wedding_date: weddingDate || null,
-      gallery_token: galleryToken,
-      status: 'open',
-    })
-    .select('id')
-    .single()
+  // Retry with a suffix on unique-constraint violation (23505) so two orgs with
+  // identical couple names don't permanently block each other.
+  let event: { id: string } | null = null
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const eventSlug = attempt === 0
+      ? baseSlug
+      : `${baseSlug}-${Math.random().toString(36).slice(2, 6)}`
 
-  if (error || !event) return { error: 'Could not create event.' }
+    const { data, error } = await db
+      .from('events')
+      .insert({
+        organization_id: orgId,
+        name: eventName,
+        slug: eventSlug,
+        couple_names: coupleNames,
+        wedding_date: weddingDate || null,
+        gallery_token: galleryToken,
+        status: 'open',
+      })
+      .select('id')
+      .single()
+
+    if (data) { event = data; break }
+    if (error?.code !== '23505') return { error: 'Could not create event.' }
+  }
+
+  if (!event) return { error: 'Could not create event (slug conflict after retries).' }
 
   revalidatePath('/dashboard')
   redirect(`/dashboard/events/${event.id}`)

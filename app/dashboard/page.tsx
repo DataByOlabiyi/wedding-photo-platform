@@ -17,20 +17,16 @@ export default async function DashboardPage() {
     .eq('organization_id', membership.organization_id)
     .order('created_at', { ascending: false })
 
-  // Photo counts per event
-  const eventIds = (events ?? []).map(e => e.id)
-  const { data: mediaCounts } = eventIds.length > 0
-    ? await db
-        .from('media')
-        .select('event_id')
-        .in('event_id', eventIds)
-        .is('deleted_at', null)
+  // Photo counts per event — single aggregate RPC instead of fetching all rows
+  const { data: mediaCounts } = events?.length
+    ? await db.rpc('get_event_photo_counts', { org_id: membership.organization_id })
     : { data: [] }
 
-  const countByEvent = (mediaCounts ?? []).reduce<Record<string, number>>((acc, row) => {
-    acc[row.event_id] = (acc[row.event_id] ?? 0) + 1
+  type PhotoCountRow = { event_id: string; photo_count: bigint | number }
+  const countByEvent = ((mediaCounts ?? []) as PhotoCountRow[]).reduce((acc, row) => {
+    acc[row.event_id] = Number(row.photo_count)
     return acc
-  }, {})
+  }, {} as Record<string, number>)
 
   const baseUrl = process.env.NEXT_PUBLIC_URL ?? 'http://localhost:3000'
 

@@ -88,7 +88,6 @@ export function MediaLightbox({
         result = await guestSelfDeleteMedia(
           media.id,
           media.uploaded_by,
-          media.uploaded_at,
           sessionToken ?? undefined
         )
       }

@@ -3,15 +3,15 @@
 import { Heart, ArrowRight, UploadCloud, Images } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
-import { siteConfig } from '@/lib/site-config'
-
 interface UploadSuccessProps {
   guestId: string
   guestName: string
+  eventSlug: string
   photoCount: number
+  coupleNames: string
 }
 
-export function UploadSuccess({ guestId, guestName, photoCount }: UploadSuccessProps) {
+export function UploadSuccess({ guestId, guestName, eventSlug, photoCount, coupleNames }: UploadSuccessProps) {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-background px-4 py-12">
       <div className="w-full max-w-md space-y-8 text-center">
@@ -32,7 +32,7 @@ export function UploadSuccess({ guestId, guestName, photoCount }: UploadSuccessP
           </h2>
           <p className="text-lg text-muted-foreground">
             Your {photoCount} {photoCount === 1 ? "photo is" : "photos are"} now part of{" "}
-            <span className="text-primary font-medium">{siteConfig.coupleNames}</span>'s story.
+            <span className="text-primary font-medium">{coupleNames}</span>'s story.
           </p>
           <div className="flex items-center justify-center gap-2 pt-1">
             <div className="h-px w-12 bg-gradient-to-r from-transparent to-primary/30" />
@@ -50,7 +50,7 @@ export function UploadSuccess({ guestId, guestName, photoCount }: UploadSuccessP
             </Button>
           </Link>
 
-          <Link href="/upload" className="w-full">
+          <Link href={`/e/${eventSlug}`} className="w-full">
             <Button size="lg" variant="outline" className="w-full gap-2 rounded-full">
               <UploadCloud className="h-5 w-5" />
               Upload More

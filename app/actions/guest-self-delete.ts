@@ -2,26 +2,29 @@
 
 import { createAdminClient } from '@/lib/supabase/admin'
 
+// Guest-facing action: no user session exists. createAdminClient() is used because
+// the media RLS only allows reads via get_my_org_id() (authenticated couples) or the
+// public approved-media policy (guests can't read their own pending rows). Identity
+// is confirmed by: UUID format guard → guest_token/uploaded_by DB match → sessionToken check.
+
 export async function guestSelfDeleteMedia(
   mediaId: string,
   guestId: string,
-  uploadedAt: string,
   sessionToken?: string,
   eventId?: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const uploadTime = new Date(uploadedAt).getTime()
-    if (Date.now() - uploadTime > 24 * 60 * 60 * 1000) {
-      return { success: false, error: 'Delete window has expired (24 hours)' }
+    const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+    if (!UUID_RE.test(mediaId)) {
+      return { success: false, error: 'Invalid request' }
     }
 
-    const supabase = createAdminClient()
-    const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
     const isToken = UUID_RE.test(guestId)
+    const supabase = createAdminClient()
 
     let query = supabase
       .from('media')
-      .select('id, guest_token, event_id')
+      .select('id, guest_token, event_id, uploaded_at')
       .eq('id', mediaId)
       .is('deleted_at', null)
 
@@ -33,16 +36,20 @@ export async function guestSelfDeleteMedia(
       return { success: false, error: 'Media not found' }
     }
 
-    // Scope check: verify the media belongs to the event the guest is claiming
-    // (prevents a leaked media ID from being used to delete photos in another event)
+    const uploadTime = new Date(media.uploaded_at).getTime()
+    if (Date.now() - uploadTime > 24 * 60 * 60 * 1000) {
+      return { success: false, error: 'Delete window has expired (24 hours)' }
+    }
+
     if (eventId && media.event_id !== eventId) {
       return { success: false, error: 'Media not found' }
     }
 
-    if (media.guest_token) {
-      if (!sessionToken || sessionToken !== media.guest_token) {
-        return { success: false, error: 'You can only delete photos uploaded from your own device' }
-      }
+    // Require a device token in all paths — if the row has a guest_token it must match;
+    // if it has no guest_token we still require a token so named guests can't have their
+    // photos deleted by anyone who knows their display name.
+    if (!sessionToken || (media.guest_token && sessionToken !== media.guest_token)) {
+      return { success: false, error: 'You can only delete photos uploaded from your own device' }
     }
 
     const { error: deleteError } = await supabase

@@ -1,7 +1,7 @@
 {
-  "name": "Mojirade & Olabiyi Wedding",
-  "short_name": "M&O Wedding",
-  "description": "Share and view photos from Mojirade & Olabiyi's wedding celebration",
+  "name": "SnapEvent",
+  "short_name": "SnapEvent",
+  "description": "Create a private photo gallery for your event. Share a link. Guests upload directly from their phones.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#1c1810",

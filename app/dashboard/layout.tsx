@@ -31,6 +31,12 @@ export default async function DashboardLayout({ children }: { children: React.Re
                   New event
                 </Button>
               </Link>
+              <Link href="/dashboard/settings">
+                <Button variant="ghost" size="sm" className="gap-2">
+                  <Settings className="h-4 w-4" />
+                  Settings
+                </Button>
+              </Link>
             </nav>
           </div>
 

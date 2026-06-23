@@ -11,5 +11,3 @@ export function createAdminClient() {
   )
 }
 
-// Alias kept for call sites that used the old unchecked variant.
-export { createAdminClient as createAdminClientUnchecked }

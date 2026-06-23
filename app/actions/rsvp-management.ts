@@ -1,32 +1,36 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { requireOrg } from '@/lib/auth'
+import type { RSVPStatus, Guest } from '@/lib/types'
 
-export type RSVPStatus = 'pending' | 'accepted' | 'declined'
+export type { RSVPStatus, Guest }
 
-export interface Guest {
-  id: string
-  name: string
-  email?: string | null
-  rsvp_status: RSVPStatus
-  uploaded: boolean
-  uploaded_at?: string | null
-}
-
-/**
- * Get all guests with their RSVP and upload status
- */
-export async function getGuestsWithStatus(): Promise<{ guests: Guest[]; error?: string }> {
-  await requireOrg()
+export async function getGuestsWithStatus(
+  eventId: string
+): Promise<{ guests: Guest[]; error?: string }> {
+  const { membership } = await requireOrg()
+  const orgId = membership.organization_id
 
   try {
     const supabase = await createClient()
 
-    // Get all guests
+    const { data: eventCheck, error: eventError } = await supabase
+      .from('events')
+      .select('id')
+      .eq('id', eventId)
+      .eq('organization_id', orgId)
+      .single()
+
+    if (eventError || !eventCheck) {
+      return { guests: [], error: 'Event not found' }
+    }
+
     const { data: guests, error: guestError } = await supabase
       .from('guests')
       .select('*')
+      .eq('event_id', eventId)
       .order('name')
 
     if (guestError) {
@@ -37,10 +41,10 @@ export async function getGuestsWithStatus(): Promise<{ guests: Guest[]; error?: 
       return { guests: [] }
     }
 
-    // Get unique uploaders
     const { data: media } = await supabase
       .from('media')
       .select('uploaded_by, uploaded_at')
+      .eq('event_id', eventId)
       .order('uploaded_at', { ascending: false })
 
     const uploaders = new Map<string, string>()
@@ -50,7 +54,8 @@ export async function getGuestsWithStatus(): Promise<{ guests: Guest[]; error?: 
       }
     })
 
-    // Combine data
+    // uploaded_by stores the guest's display name (set by the upload form), not a UUID,
+    // so matching against guest.name is the correct join key.
     const guestsWithStatus: Guest[] = guests.map((guest) => ({
       id: guest.id,
       name: guest.name,
@@ -67,21 +72,34 @@ export async function getGuestsWithStatus(): Promise<{ guests: Guest[]; error?: 
   }
 }
 
-/**
- * Update guest RSVP status
- */
 export async function updateGuestRsvp(
+  eventId: string,
   guestId: string,
   status: RSVPStatus
 ): Promise<{ success: boolean; error?: string }> {
-  await requireOrg()
+  const { membership } = await requireOrg()
+  const orgId = membership.organization_id
 
   try {
     const supabase = await createClient()
-    const { error } = await supabase
+
+    const { data: eventCheck, error: eventError } = await supabase
+      .from('events')
+      .select('id')
+      .eq('id', eventId)
+      .eq('organization_id', orgId)
+      .single()
+
+    if (eventError || !eventCheck) {
+      return { success: false, error: 'Event not found' }
+    }
+
+    const db = createAdminClient()
+    const { error } = await db
       .from('guests')
       .update({ rsvp_status: status })
       .eq('id', guestId)
+      .eq('event_id', eventId)
 
     if (error) {
       return { success: false, error: error.message }
@@ -94,20 +112,32 @@ export async function updateGuestRsvp(
   }
 }
 
-/**
- * Add a new guest
- */
 export async function addGuest(
+  eventId: string,
   name: string,
   email?: string
 ): Promise<{ success: boolean; error?: string; guestId?: string }> {
-  await requireOrg()
+  const { membership } = await requireOrg()
+  const orgId = membership.organization_id
 
   try {
     const supabase = await createClient()
-    const { data, error } = await supabase
+
+    const { data: eventCheck, error: eventError } = await supabase
+      .from('events')
+      .select('id')
+      .eq('id', eventId)
+      .eq('organization_id', orgId)
+      .single()
+
+    if (eventError || !eventCheck) {
+      return { success: false, error: 'Event not found' }
+    }
+
+    const db = createAdminClient()
+    const { data, error } = await db
       .from('guests')
-      .insert({ name, email, rsvp_status: 'pending' })
+      .insert({ name, email, rsvp_status: 'pending', event_id: eventId })
       .select()
       .single()
 
@@ -122,15 +152,33 @@ export async function addGuest(
   }
 }
 
-/**
- * Delete a guest
- */
-export async function deleteGuest(guestId: string): Promise<{ success: boolean; error?: string }> {
-  await requireOrg()
+export async function deleteGuest(
+  eventId: string,
+  guestId: string
+): Promise<{ success: boolean; error?: string }> {
+  const { membership } = await requireOrg()
+  const orgId = membership.organization_id
 
   try {
     const supabase = await createClient()
-    const { error } = await supabase.from('guests').delete().eq('id', guestId)
+
+    const { data: eventCheck, error: eventError } = await supabase
+      .from('events')
+      .select('id')
+      .eq('id', eventId)
+      .eq('organization_id', orgId)
+      .single()
+
+    if (eventError || !eventCheck) {
+      return { success: false, error: 'Event not found' }
+    }
+
+    const db = createAdminClient()
+    const { error } = await db
+      .from('guests')
+      .delete()
+      .eq('id', guestId)
+      .eq('event_id', eventId)
 
     if (error) {
       return { success: false, error: error.message }
@@ -142,4 +190,3 @@ export async function deleteGuest(guestId: string): Promise<{ success: boolean; 
     return { success: false, error: 'Failed to delete guest' }
   }
 }
-

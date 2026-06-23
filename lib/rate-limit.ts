@@ -9,6 +9,7 @@ const hasUpstashConfig =
 
 let ratelimit: Ratelimit | null = null
 let adminRatelimit: Ratelimit | null = null
+let pinRatelimit: Ratelimit | null = null
 
 if (hasUpstashConfig) {
   const redis = new Redis({
@@ -29,11 +30,19 @@ if (hasUpstashConfig) {
     prefix: 'admin-auth-rate-limit',
     limiter: Ratelimit.slidingWindow(5, '15 m'),
   })
+
+  pinRatelimit = new Ratelimit({
+    redis,
+    analytics: false,
+    prefix: 'pin-rate-limit',
+    limiter: Ratelimit.slidingWindow(10, '15 m'),
+  })
 }
 
 // Development-only in-memory fallback (single process, no concurrency concerns)
 const inMemoryLimits = new Map<string, { count: number; resetTime: number }>()
 const inMemoryAdminLimits = new Map<string, { count: number; resetTime: number }>()
+const inMemoryPinLimits = new Map<string, { count: number; resetTime: number }>()
 
 export async function checkUploadRateLimit(ip: string): Promise<{ allowed: boolean; remaining: number; resetTime?: number }> {
   // Guard at request-time so the build succeeds without Upstash env vars.
@@ -62,8 +71,10 @@ export async function checkUploadRateLimit(ip: string): Promise<{ allowed: boole
   const userLimit = inMemoryLimits.get(ip)
 
   if (userLimit && now < userLimit.resetTime) {
-    const remaining = Math.max(0, 60 - userLimit.count)
-    return { allowed: remaining > 0, remaining, resetTime: userLimit.resetTime }
+    if (userLimit.count >= 60) return { allowed: false, remaining: 0, resetTime: userLimit.resetTime }
+    inMemoryLimits.set(ip, { count: userLimit.count + 1, resetTime: userLimit.resetTime })
+    const remaining = Math.max(0, 60 - userLimit.count - 1)
+    return { allowed: true, remaining, resetTime: userLimit.resetTime }
   }
 
   inMemoryLimits.set(ip, { count: 1, resetTime: now + hourMs })
@@ -95,4 +106,31 @@ export async function checkAdminRateLimit(ip: string): Promise<{ allowed: boolea
 
   inMemoryAdminLimits.set(ip, { count: 1, resetTime: now + windowMs })
   return { allowed: true, remaining: 4 }
+}
+
+export async function checkPinRateLimit(ip: string): Promise<{ allowed: boolean; remaining: number }> {
+  if (pinRatelimit) {
+    try {
+      const { success, remaining } = await pinRatelimit.limit(ip)
+      return { allowed: success, remaining: Math.max(0, remaining) }
+    } catch (error) {
+      console.error('PIN rate limit check failed:', error)
+      if (isProduction) return { allowed: false, remaining: 0 }
+      return { allowed: true, remaining: 10 }
+    }
+  }
+
+  // In-memory fallback — development only (10 attempts per 15 min)
+  const now = Date.now()
+  const windowMs = 15 * 60 * 1000
+  const entry = inMemoryPinLimits.get(ip)
+
+  if (entry && now < entry.resetTime) {
+    if (entry.count >= 10) return { allowed: false, remaining: 0 }
+    inMemoryPinLimits.set(ip, { count: entry.count + 1, resetTime: entry.resetTime })
+    return { allowed: true, remaining: 10 - entry.count - 1 }
+  }
+
+  inMemoryPinLimits.set(ip, { count: 1, resetTime: now + windowMs })
+  return { allowed: true, remaining: 9 }
 }

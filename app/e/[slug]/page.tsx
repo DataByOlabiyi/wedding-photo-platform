@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { EventUploadForm } from '@/components/event-upload-form'
+import { verifyPinCookie } from '@/lib/pin-cookie'
 
 interface Props {
   params: Promise<{ slug: string }>
@@ -38,10 +39,10 @@ export default async function EventUploadPage({ params }: Props) {
     )
   }
 
-  // PIN gate: if event has a PIN, check for a verified cookie
+  // PIN gate: if event has a PIN, check for a signed verified cookie
   if (event.pin_hash) {
     const cookieStore = await cookies()
-    const verified = cookieStore.get(`pin_verified_${event.id}`)?.value === 'true'
+    const verified = await verifyPinCookie(cookieStore, event.id)
     if (!verified) {
       redirect(`/e/${slug}/pin`)
     }

@@ -4,9 +4,17 @@ import { Shield, Users, Image as ImageIcon, Zap } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { PlanOverrideForm } from './plan-override-form'
+import { EventSearchInput } from './event-search-input'
 
-export default async function SuperAdminPage() {
+export default async function SuperAdminPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string }>
+}) {
   await requireSuperAdmin()
+
+  const { q: rawQ } = await searchParams
+  const q = rawQ ? rawQ.replace(/[%_]/g, '\\$&').trim() : ''
 
   const db = createAdminClient()
 
@@ -15,6 +23,15 @@ export default async function SuperAdminPage() {
     db.from('events').select('id, organization_id, name, status').order('created_at', { ascending: false }),
     db.from('media').select('id', { count: 'exact', head: true }).is('deleted_at', null),
   ])
+
+  const matchedEvents = q
+    ? await db
+        .from('events')
+        .select('id, name, slug, couple_names, status, organization_id, organizations(name, plan)')
+        .or(`slug.ilike.%${q}%,couple_names.ilike.%${q}%`)
+        .order('created_at', { ascending: false })
+        .limit(20)
+    : null
 
   const eventsByOrg = (events ?? []).reduce<Record<string, number>>((acc, e) => {
     acc[e.organization_id] = (acc[e.organization_id] ?? 0) + 1
@@ -83,6 +100,75 @@ export default async function SuperAdminPage() {
                 <div className="px-6 py-8 text-center text-sm text-muted-foreground">No organizations yet.</div>
               )}
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Event lookup */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Event lookup</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <EventSearchInput defaultValue={rawQ ?? ''} />
+
+            {!q && (
+              <p className="text-sm text-muted-foreground">
+                Search by event slug or couple name to look up a specific event.
+              </p>
+            )}
+
+            {q && matchedEvents && (
+              <>
+                {matchedEvents.data && matchedEvents.data.length > 0 ? (
+                  <div className="divide-y divide-border rounded-md border">
+                    {matchedEvents.data.map(event => {
+                      const orgData = Array.isArray(event.organizations)
+                        ? event.organizations[0]
+                        : event.organizations as { name: string; plan: string } | null
+                      return (
+                        <div key={event.id} className="flex items-start justify-between gap-4 px-4 py-3">
+                          <div className="min-w-0 space-y-0.5">
+                            <p className="font-medium truncate">{event.name}</p>
+                            <p className="text-xs text-muted-foreground">
+                              <code className="rounded bg-muted px-1 py-0.5">{event.slug}</code>
+                              {event.couple_names && (
+                                <span> · {event.couple_names}</span>
+                              )}
+                            </p>
+                            {orgData && (
+                              <p className="text-xs text-muted-foreground">
+                                {orgData.name}
+                              </p>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2 shrink-0">
+                            {orgData && (
+                              <Badge variant={orgData.plan === 'pro' ? 'default' : 'secondary'} className="capitalize text-xs">
+                                {orgData.plan}
+                              </Badge>
+                            )}
+                            <Badge
+                              variant={event.status === 'active' ? 'default' : 'secondary'}
+                              className="capitalize text-xs"
+                            >
+                              {event.status}
+                            </Badge>
+                            <a
+                              href={`/dashboard/events/${event.id}`}
+                              className="text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground"
+                            >
+                              View
+                            </a>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">No events found matching &ldquo;{rawQ}&rdquo;.</p>
+                )}
+              </>
+            )}
           </CardContent>
         </Card>
       </main>

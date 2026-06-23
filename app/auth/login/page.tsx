@@ -69,6 +69,11 @@ export default function LoginPage() {
               autoComplete="current-password"
             />
           </div>
+          <div className="flex justify-end">
+            <Link href="/auth/forgot-password" className="text-xs text-muted-foreground underline underline-offset-4">
+              Forgot password?
+            </Link>
+          </div>
           <Button type="submit" className="w-full rounded-full" disabled={loading}>
             {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Sign in'}
           </Button>

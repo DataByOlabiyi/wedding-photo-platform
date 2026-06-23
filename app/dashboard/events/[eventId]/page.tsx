@@ -2,6 +2,7 @@ import { requireOrg } from '@/lib/auth'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { notFound } from 'next/navigation'
 import { EventGalleryClient } from './event-gallery-client'
+import type { MediaItem } from '@/lib/types'
 
 interface Props {
   params: Promise<{ eventId: string }>
@@ -22,6 +23,15 @@ export default async function EventGalleryPage({ params }: Props) {
 
   if (!event) notFound()
 
+  // Fetch media server-side after ownership is confirmed — avoids browser client cross-tenant read gap
+  const { data: media } = await db
+    .from('media')
+    .select('*')
+    .eq('event_id', eventId)
+    .is('deleted_at', null)
+    .order('uploaded_at', { ascending: false })
+    .limit(50)
+
   const org = Array.isArray(membership.organizations)
     ? membership.organizations[0]
     : membership.organizations as { plan: string } | null
@@ -34,6 +44,7 @@ export default async function EventGalleryPage({ params }: Props) {
       galleryToken={event.gallery_token}
       status={event.status}
       plan={org?.plan ?? 'starter'}
+      initialMedia={(media ?? []) as MediaItem[]}
     />
   )
 }

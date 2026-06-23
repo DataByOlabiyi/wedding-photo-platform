@@ -39,10 +39,22 @@ const MAX_IMAGE_SIZE_MB = 50
 const MAX_FILES = 50
 const GUEST_TOKEN_KEY = 'guest_upload_token'
 
+async function checkEventLimit(eventId: string): Promise<{ allowed: boolean; remaining: number | null; limit: number | null }> {
+  try {
+    const res = await fetch(`/api/upload/check-event-limit?eventId=${eventId}`)
+    if (!res.ok) return { allowed: true, remaining: null, limit: null } // fail open
+    return res.json()
+  } catch {
+    return { allowed: true, remaining: null, limit: null } // fail open on network errors
+  }
+}
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
 function getOrCreateGuestToken(): string {
   try {
     const existing = localStorage.getItem(GUEST_TOKEN_KEY)
-    if (existing) return existing
+    if (existing && UUID_RE.test(existing)) return existing
     const token = crypto.randomUUID()
     localStorage.setItem(GUEST_TOKEN_KEY, token)
     return token
@@ -232,6 +244,17 @@ export function EventUploadForm({ eventId, eventSlug, eventName, coupleNames, we
       }
     } catch { /* continue if check fails */ }
 
+    const limitCheck = await checkEventLimit(eventId)
+    if (!limitCheck.allowed) {
+      toast.error('Photo limit reached', { description: 'This event has reached its 200-photo limit. Contact the couple if you still want to share photos.' })
+      setIsUploading(false)
+      return
+    }
+    if (limitCheck.remaining !== null && accepted.length > limitCheck.remaining && limitCheck.remaining > 0) {
+      accepted.splice(limitCheck.remaining)
+      toast.warning(`Only ${limitCheck.remaining} photo slots remain. Uploading first ${limitCheck.remaining} of your ${files.length} files.`)
+    }
+
     const startIndex = uploads.length
     let nextIdx = 0
     async function worker() {
@@ -258,7 +281,7 @@ export function EventUploadForm({ eventId, eventSlug, eventName, coupleNames, we
   const allComplete = uploads.length > 0 && completedCount === uploads.length
 
   if (step === 'success' && allComplete) {
-    return <UploadSuccess guestId={guestToken} guestName={guestName} photoCount={uploads.length} />
+    return <UploadSuccess guestId={encodeURIComponent(guestName)} guestName={guestName} eventSlug={eventSlug} photoCount={uploads.length} coupleNames={coupleNames ?? eventName ?? ""} />
   }
 
   return (

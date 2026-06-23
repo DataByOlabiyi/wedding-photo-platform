@@ -1,169 +1,284 @@
-# BM Wedding Photo - Complete Implementation
+# Wedding Photo Platform
 
-A full-stack wedding photo sharing platform built with Next.js 16, React 19, Supabase, and TypeScript. Guests can upload photos, couples get admin dashboard, and everything is secure with proper authentication and rate limiting.
+A multi-tenant SaaS for wedding and event photo sharing. Couples create an account, set up an event, and share a link or QR code. Guests upload photos without an account. Couples manage and download everything from a private dashboard.
 
-## Features
+## Architecture
 
-### Core Features
-- **Guest Photo Upload** - Simple 2-step flow: enter name/tag → upload files
-- **Photo Gallery** - Browse photos organized by guest with beautiful lightbox viewer
-- **Admin Dashboard** - Manage all photos, delete, download, generate QR codes
-- **PWA Support** - Install as app on mobile, works offline
-- **Real-time Updates** - Photos appear instantly via Supabase Realtime
+```
+Platform Admin (superadmin)
+  └── Organizations (one per couple/business)
+        └── Events (one per wedding, unlimited on Pro)
+              ├── Media (photos uploaded by guests)
+              └── Guests (RSVP list, optional)
+```
 
-### Security (Implemented)
-- ✅ Server-side admin authentication with httpOnly JWT cookies
-- ✅ RLS policies prevent public deletion
-- ✅ IP-based upload rate limiting (30 files/hour)
-- ✅ Guest self-delete window (30 minutes after upload)
-- ✅ EXIF data stripping for privacy
+**Three roles:**
 
-### Advanced Features (Implemented)
-- ✅ QR code generator for easy guest access
-- ✅ Download all photos as ZIP file
-- ✅ Shareable read-only gallery link
-- ✅ Featured photos rotating slideshow on home
-- ✅ Email notifications when guests upload
-- ✅ Upload progress tracking
-- ✅ Success screen with redirect to own photos
-- ✅ Improved video playback with autoplay (muted)
-- ✅ Pagination for better performance
-- ✅ Duplicate photo detection via SHA-256 hashing
-- ✅ Dark mode toggle
+| Role | Auth | What they can do |
+|------|------|-----------------|
+| Admin | Supabase Auth + `is_superadmin` flag | Platform-wide stats, override org plans |
+| Couple | Supabase Auth (email + password) | Create events, view/delete photos, download ZIP, manage settings |
+| Guest | None (no account) | Upload photos to an event via a shared link |
 
-## Quick Start
+**Tenant isolation:** Every data query is scoped to `organization_id` via the `org_members` table. Row-Level Security policies on all tables enforce this at the database layer — not just in application code.
 
-### Prerequisites
-- Node.js 18+
-- Supabase account (free tier works)
-- Resend account (for email notifications)
+## Tech Stack
 
-### Environment Setup
+| Layer | Technology |
+|-------|-----------|
+| Framework | Next.js 16.2.9 (App Router, Turbopack) |
+| Language | TypeScript 5.7 (strict mode) |
+| Styling | Tailwind CSS 4, Radix UI, shadcn/ui |
+| Database | Supabase PostgreSQL (with RLS) |
+| Auth | Supabase Auth (`@supabase/ssr`) |
+| Storage | Supabase Storage (`wedding-media` bucket) |
+| Rate limiting | Upstash Redis |
+| Billing | Stripe (Starter / Pro plans) |
+| Email | Resend |
+| Error tracking | Sentry |
+| Hosting | Vercel |
+| Testing | Vitest |
 
-1. **Install dependencies**
-   ```bash
-   npm install
-   ```
+## Local Development
 
-2. **Create `.env.local` file:**
-   ```env
-   # Supabase
-   NEXT_PUBLIC_SUPABASE_URL=your-supabase-url
-   NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
-   SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+### 1. Prerequisites
 
-   # Admin & Security
-   ADMIN_PASSWORD=your-secure-password
-   JWT_SECRET=your-jwt-secret-key
+- Node.js 20+
+- A [Supabase](https://supabase.com) project
+- An [Upstash](https://upstash.com) Redis database (required for rate limiting in production; dev uses an in-memory fallback)
 
-   # Features
-   NEXT_PUBLIC_GALLERY_TOKEN=your-unique-token
-   RESEND_API_KEY=your-resend-api-key
-   COUPLE_EMAIL=couple@example.com
-   NEXT_PUBLIC_URL=http://localhost:3000
+### 2. Install dependencies
 
-   # Rate Limiting (optional)
-   UPSTASH_REDIS_REST_URL=your-upstash-url
-   UPSTASH_REDIS_REST_TOKEN=your-upstash-token
-   ```
+```bash
+npm install
+```
 
-3. **Run database migrations** in Supabase SQL editor:
-   - `scripts/001_create_media_table.sql`
-   - `scripts/002_create_storage_bucket.sql`
-   - `scripts/003_fix_media_schema.sql`
-   - `scripts/004_add_guest_tag.sql`
-   - `scripts/005_fix_rls_policies.sql`
+### 3. Environment variables
 
-4. **Start development server:**
-   ```bash
-   npm run dev
-   ```
+Copy `.env.example` to `.env.local` and fill in your values:
 
-5. **Open browser:** http://localhost:3000
+```bash
+cp .env.example .env.local
+```
+
+Required for local dev:
+
+```env
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+NEXT_PUBLIC_URL=http://localhost:3000
+```
+
+Optional (features degrade gracefully without them):
+
+```env
+UPSTASH_REDIS_REST_URL=...      # rate limiting (in-memory fallback in dev)
+UPSTASH_REDIS_REST_TOKEN=...
+STRIPE_SECRET_KEY=...           # billing
+STRIPE_WEBHOOK_SECRET=...
+STRIPE_PRO_PRICE_ID=...
+RESEND_API_KEY=...              # email notifications
+NEXT_PUBLIC_SENTRY_DSN=...      # error tracking
+```
+
+> **Never commit `.env.local`.** It is in `.gitignore`. Use `.env.example` as the template — it contains no real credentials.
+
+### 4. Run database migrations
+
+Run each SQL file in order in the Supabase SQL editor (Dashboard → SQL editor):
+
+```
+scripts/001_create_media_table.sql
+scripts/002_create_storage_bucket.sql
+scripts/003_fix_media_schema.sql
+scripts/004_add_guest_tag.sql
+scripts/005_fix_rls_policies.sql
+scripts/006_add_optional_features.sql
+scripts/007_add_events_table.sql
+scripts/007_soft_delete_and_rls.sql
+scripts/008_add_audit_logs.sql
+scripts/009_add_guest_token.sql
+scripts/010_add_organizations.sql
+scripts/011_alter_events_for_saas.sql
+scripts/012_add_org_members.sql
+scripts/013_alter_media_for_saas.sql
+scripts/014_saas_rls_policies.sql
+scripts/015_fix_media_on_delete_and_gallery_rls.sql
+```
+
+> The scripts directory does not yet have a migration runner — they must be applied in the order listed above. Skip files already applied to an existing database.
+
+### 5. Start the dev server
+
+```bash
+npm run dev
+```
+
+Open [http://localhost:3000](http://localhost:3000).
 
 ## Routes
 
-| Route | Purpose | Auth |
-|-------|---------|------|
-| `/` | Home gallery with guest albums | Public |
-| `/upload` | Upload photos (2-step form) | Public |
-| `/guest/[guestId]` | View photos from specific guest | Public |
-| `/gallery/[token]` | Shareable read-only gallery | Token |
-| `/admin` | Dashboard to manage all photos | Admin |
-| `/admin/login` | Admin login page | Public |
-| `/admin/qr` | Generate/download QR code | Admin |
+### Public (no auth)
 
-## Usage
+| Route | Purpose |
+|-------|---------|
+| `/` | Home / landing |
+| `/e/[slug]` | Guest upload page (shared link from Couple) |
+| `/e/[slug]/pin` | PIN entry (if event is PIN-protected) |
+| `/gallery/[slug]?token=<token>` | View-only shareable gallery |
+| `/guest/[guestId]` | Photos from one guest |
+| `/auth/login` | Couple sign in |
+| `/auth/signup` | Couple account creation |
+| `/auth/forgot-password` | Password reset request |
+| `/auth/reset-password` | Set new password (from email link) |
+| `/legal/terms` | Terms of Service |
+| `/legal/privacy` | Privacy Policy |
+| `/support` | Support & FAQ |
 
-### For Guests
-1. Visit the site or scan QR code
-2. Click "Add Photos" or "+" button
-3. Enter your name and select relationship tag
-4. Upload up to 10 files (50MB each)
-5. Photos are compressed and appear in gallery instantly
-6. Can delete own photos within 30 minutes
+### Couple (authenticated)
 
-### For Couples (Admin)
-1. Go to `/admin`
-2. Login with your admin password
-3. View all photos, stats, and guest uploads
-4. Delete unwanted photos
-5. Generate QR code for printing/sharing
-6. Download all photos as ZIP file
-7. Get email notifications when guests upload
+| Route | Purpose |
+|-------|---------|
+| `/onboarding` | First-time org + event setup |
+| `/dashboard` | Event list and stats |
+| `/dashboard/events/new` | Create a new event |
+| `/dashboard/events/[eventId]` | Gallery view + delete + ZIP download |
+| `/dashboard/events/[eventId]/settings` | PIN, status, gallery visibility, share links |
+| `/dashboard/billing` | Plan selection and upgrade |
+| `/dashboard/settings` | Account settings and deletion |
 
-## Technology Stack
+### Admin (superadmin only)
 
-- **Frontend**: Next.js 16, React 19, TypeScript, Tailwind CSS 4
-- **Backend**: Supabase PostgreSQL, Object Storage, Realtime
-- **Authentication**: Server-side JWT with httpOnly cookies
-- **Email**: Resend API
-- **Rate Limiting**: Upstash Redis (optional)
-- **Hosting**: Vercel
+| Route | Purpose |
+|-------|---------|
+| `/superadmin` | Platform stats, org plan overrides |
+
+## Plans
+
+| Feature | Starter (free) | Pro |
+|---------|---------------|-----|
+| Events | 1 | Unlimited |
+| Photos per event | Unlimited | Unlimited |
+| ZIP download | ✓ | ✓ |
+| PIN protection | ✓ | ✓ |
+| Guest gallery toggle | ✓ | ✓ |
+| Storage quota | — | — |
+
+> Storage quotas are not yet enforced. This is a known gap to address before heavy scale.
 
 ## Security
 
 ### Authentication
-- Admin password validated server-side (never exposed to client)
-- JWT tokens signed with secret key
-- Tokens stored in httpOnly cookies (inaccessible to JavaScript)
-- Tokens expire after 24 hours
+- Couples authenticate via Supabase Auth (email + password, email confirmation required)
+- Session cookies are `httpOnly`, `secure` in production, managed by `@supabase/ssr`
+- Superadmin status is set via `app_metadata.is_superadmin` — not writable by users
+- Guests have no accounts; they are identified by a `guest_token` (UUID) stored in `localStorage`
 
-### Authorization
-- RLS policies prevent public deletion
-- Guest self-delete limited to 30-minute window
-- Admin operations use service role (bypass RLS)
-- Rate limiting prevents abuse (30 files/hour per IP)
+### Tenant isolation
+- All queries scope data to `membership.organization_id` — verified server-side before any DB access
+- Supabase RLS policies enforce isolation at the database layer as a second line of defence
+- The `get_my_org_id()` SQL function (SECURITY DEFINER) is the RLS policy anchor
 
-## Deployment
+### File uploads
+- Magic-byte validation on upload — extension alone is not trusted
+- EXIF data stripped via canvas redraw before storage (removes GPS, camera metadata)
+- 50 MB pre-compression limit, ~4 MB post-compression target
+- 50 files per upload session
+- 60 uploads per hour per IP (Upstash sliding window)
 
-### Deploy to Vercel
+### Rate limiting
+- Upload: 60 files / hour / IP
+- PIN verification: 10 attempts / 15 min / IP
+- Admin auth: 5 attempts / 15 min / IP (wired in `lib/rate-limit.ts`, apply to login if needed)
+
+### PIN protection
+- PINs are SHA-256 hashed with a salt before storage
+- Constant-time comparison to prevent timing attacks (`lib/pin-utils.ts`)
+- Verified PIN sets an `httpOnly` cookie scoped to the event
+
+## Testing
+
 ```bash
-vercel deploy
+npm test               # unit tests (Vitest)
+npm run test:watch     # unit tests in watch mode
+npx playwright test    # E2E tests (requires a running server)
 ```
 
-### Environment Variables
-Set all `.env.local` variables in Vercel project settings.
+**Unit tests** (`__tests__/`) cover cross-tenant isolation invariants, guest upload scoping, PIN brute-force resistance, and `guests_can_view_gallery` RLS enforcement.
 
-## Documentation
+**E2E tests** (`tests/`) cover three happy paths: guest upload flow, couple gallery view + ZIP download, and event creation. They require a running dev server and real Supabase credentials. Set these env vars before running:
 
-See `IMPLEMENTATION_SUMMARY.md` for detailed information about:
-- All implemented features
-- Database schema
-- API routes and server actions
-- Security implementation
-- Performance optimizations
-- Testing checklist
+```env
+TEST_BASE_URL=http://localhost:3000   # default
+TEST_EVENT_SLUG=your-event-slug       # an open event
+TEST_COUPLE_EMAIL=you@example.com
+TEST_COUPLE_PASSWORD=yourpassword
+```
 
-## Support
+## CI/CD
 
-For issues or questions:
-1. Check `IMPLEMENTATION_SUMMARY.md` for detailed info
-2. Review database schema in Supabase
-3. Check browser console for errors
-4. Review Vercel logs for server errors
+GitHub Actions runs on every push and pull request to `main`:
+
+1. `npm ci` — install dependencies
+2. `npm run lint` — ESLint
+3. `npm run build` — Next.js production build
+
+See [.github/workflows/ci.yml](.github/workflows/ci.yml).
+
+**Deployment** is manual via the Vercel CLI:
+
+```bash
+vercel --prod
+```
+
+A staging environment (separate Supabase project + Vercel environment) is on the pre-launch checklist but not yet configured.
+
+## Error Tracking
+
+Sentry is configured via `sentry.*.config.ts` and `instrumentation.ts`. It is disabled unless `NEXT_PUBLIC_SENTRY_DSN` is set — the build and app function normally without it.
+
+To enable:
+1. Create a project in [sentry.io](https://sentry.io)
+2. Set `NEXT_PUBLIC_SENTRY_DSN`, `SENTRY_AUTH_TOKEN`, `SENTRY_ORG`, `SENTRY_PROJECT` in Vercel
+
+## Pre-Launch Checklist
+
+These items require action outside the codebase:
+
+- [ ] **Rotate Supabase service role key** (was previously exposed — do this first)
+- [ ] **Rotate Stripe API keys** (same reason)
+- [ ] Run `scripts/015_fix_media_on_delete_and_gallery_rls.sql` on production DB
+- [ ] Enable Supabase PITR (point-in-time recovery) in project settings
+- [ ] Configure Upstash Redis (`UPSTASH_REDIS_REST_URL` + token) in Vercel — required for production rate limiting
+- [ ] Configure Sentry DSN in Vercel env vars
+- [ ] Set up staging environment (separate Supabase project + Vercel preview env)
+- [ ] Configure Supabase connection pooler URL for serverless scale
+- [ ] Replace `[Company Name]` and `[contact@example.com]` placeholders in `/legal/terms` and `/legal/privacy`
+- [ ] Test database restore from a Supabase backup (DR drill)
+- [ ] Verify Stripe webhook endpoint is registered in Stripe dashboard pointing to `/api/stripe/webhook`
+
+## Database Schema (summary)
+
+```
+organizations       — one per Couple account (name, slug, plan)
+  org_members       — links auth.users → organization (role: owner | editor)
+  events            — one per wedding (slug, gallery_token, pin_hash, status, closes_at)
+    media           — uploaded photos (file_url, thumbnail_url, guest_token, moderation_status)
+    featured_media  — pinned photos
+    guests          — RSVP list (optional)
+audit_logs          — action log for media deletes and moderation
+```
+
+All tables have RLS enabled. See `scripts/014_saas_rls_policies.sql` and `scripts/015_fix_media_on_delete_and_gallery_rls.sql` for the full policy definitions.
+
+## Known Gaps (post-launch backlog)
+
+- No storage quota enforcement per org/event
+- No automated migration runner (migrations are manual SQL files)
+- No admin tooling to look up a specific tenant's event by slug (superadmin event search added)
 
 ---
 
-**Built with Next.js 16 & Supabase**
-**Last Updated:** April 30, 2026
+**Stack:** Next.js 16 · Supabase · Stripe · Vercel  
+**Last updated:** June 2026

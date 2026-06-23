@@ -15,11 +15,16 @@ export default function SignupPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
+  const [agreedToTerms, setAgreedToTerms] = useState(false)
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault()
     if (password.length < 8) {
       toast.error('Password too short', { description: 'Minimum 8 characters.' })
+      return
+    }
+    if (!agreedToTerms) {
+      toast.error('Please accept the Terms of Service to continue.')
       return
     }
     setLoading(true)
@@ -83,6 +88,21 @@ export default function SignupPage() {
               minLength={8}
               autoComplete="new-password"
             />
+          </div>
+          <div className="flex items-start gap-2">
+            <input
+              id="terms"
+              type="checkbox"
+              checked={agreedToTerms}
+              onChange={(e) => setAgreedToTerms(e.target.checked)}
+              className="mt-0.5 h-4 w-4 rounded border-border accent-primary"
+            />
+            <label htmlFor="terms" className="text-xs text-muted-foreground leading-relaxed">
+              I agree to the{' '}
+              <Link href="/legal/terms" className="text-primary underline underline-offset-4">Terms of Service</Link>
+              {' '}and{' '}
+              <Link href="/legal/privacy" className="text-primary underline underline-offset-4">Privacy Policy</Link>
+            </label>
           </div>
           <Button type="submit" className="w-full rounded-full" disabled={loading}>
             {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Create account'}

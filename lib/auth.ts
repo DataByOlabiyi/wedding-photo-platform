@@ -40,3 +40,12 @@ export async function requireOrg() {
   if (!membership) redirect('/onboarding')
   return { user, membership }
 }
+
+// Like requireOrg but also enforces that the caller holds the 'owner' role.
+// Redirects to /dashboard with an error param for editor-role members attempting
+// owner-only operations (account deletion, org-level destructive actions).
+export async function requireOrgOwner() {
+  const { user, membership } = await requireOrg()
+  if (membership.role !== 'owner') redirect('/dashboard?error=forbidden')
+  return { user, membership }
+}

@@ -3,7 +3,7 @@
 import { useState, use, useEffect, useRef } from "react"
 import Image from "next/image"
 import Link from "next/link"
-import { ArrowLeft, Download, Heart, Play, User, Plus, Loader2, Trash2 } from "lucide-react"
+import { ArrowLeft, Download, Heart, Play, User, Loader2, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
@@ -84,8 +84,8 @@ export default function GuestPage({ params }: { params: Promise<{ guestId: strin
     const result = await guestSelfDeleteMedia(
       mediaToDelete.id,
       decodedGuestId,
-      mediaToDelete.uploaded_at,
-      sessionToken ?? undefined
+      sessionToken ?? undefined,
+      mediaToDelete.event_id
     )
     setIsDeleting(false)
     setMediaToDelete(null)
@@ -211,15 +211,6 @@ export default function GuestPage({ params }: { params: Promise<{ guestId: strin
           </div>
         )}
       </main>
-
-      {/* Floating Add Button */}
-      <Link
-        href="/upload"
-        className="fixed bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 transition-all hover:scale-110 hover:shadow-xl hover:shadow-primary/40 active:scale-95 md:hidden"
-        aria-label="Upload photos"
-      >
-        <Plus className="h-7 w-7 md:h-8 md:w-8" />
-      </Link>
 
       {/* Lightbox */}
       {selectedIndex !== null && guestMedia[selectedIndex] && (
