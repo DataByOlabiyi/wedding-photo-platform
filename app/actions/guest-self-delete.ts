@@ -45,10 +45,12 @@ export async function guestSelfDeleteMedia(
       return { success: false, error: 'Media not found' }
     }
 
-    // Require a device token in all paths — if the row has a guest_token it must match;
-    // if it has no guest_token we still require a token so named guests can't have their
-    // photos deleted by anyone who knows their display name.
-    if (!sessionToken || (media.guest_token && sessionToken !== media.guest_token)) {
+    // Rows without a guest_token are legacy rows with no stable device identity to verify
+    // against — block the delete entirely rather than allowing any token to substitute.
+    if (!media.guest_token) {
+      return { success: false, error: 'You can only delete photos uploaded from your own device' }
+    }
+    if (!sessionToken || sessionToken !== media.guest_token) {
       return { success: false, error: 'You can only delete photos uploaded from your own device' }
     }
 

@@ -1,10 +1,13 @@
 'use server'
 
+import { headers } from 'next/headers'
 import { Resend } from 'resend'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { checkEmailNotificationRateLimit, getIp } from '@/lib/rate-limit'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 const FROM_EMAIL = 'noreply@resend.dev'
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 // Looks up the notification email for an event's org:
 // 1. organizations.notification_email (set by couple in settings)
@@ -48,6 +51,19 @@ export async function sendUploadNotification(
   guestId: string,
   eventId?: string
 ): Promise<{ success: boolean; error?: string }> {
+  // Validate eventId format before any DB interaction
+  if (eventId && !UUID_RE.test(eventId)) {
+    return { success: false, error: 'Invalid event ID' }
+  }
+
+  // Rate-limit this action to prevent bulk email triggering by guests
+  const headersList = await headers()
+  const ip = getIp(headersList)
+  const { allowed } = await checkEmailNotificationRateLimit(ip)
+  if (!allowed) {
+    return { success: false, error: 'Rate limit exceeded' }
+  }
+
   if (!process.env.RESEND_API_KEY) {
     console.warn('Email notifications not configured')
     return { success: false, error: 'Email service not configured' }

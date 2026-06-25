@@ -19,7 +19,7 @@ export async function deleteAccount() {
     .eq('organization_id', orgId)
 
   if (eventsError) {
-    console.error('[deleteAccount] Failed to fetch events:', eventsError)
+    console.error('[deleteAccount] Failed to fetch events:', eventsError.message)
     return { error: 'Could not retrieve account data. Please try again or contact support.' }
   }
 
@@ -33,7 +33,7 @@ export async function deleteAccount() {
       .in('event_id', eventIds)
 
     if (mediaError) {
-      console.error('[deleteAccount] Failed to fetch media:', mediaError)
+      console.error('[deleteAccount] Failed to fetch media:', mediaError.message)
       return { error: 'Could not retrieve photo data. Please try again or contact support.' }
     }
 
@@ -61,7 +61,7 @@ export async function deleteAccount() {
             .from('wedding-media')
             .remove(chunk)
           if (storageError) {
-            console.error('[deleteAccount] Storage removal partial failure:', storageError)
+            console.error('[deleteAccount] Storage removal partial failure:', storageError.message)
           }
         }
       }
@@ -75,7 +75,7 @@ export async function deleteAccount() {
     .eq('organization_id', orgId)
 
   if (eventsDeleteError) {
-    console.error('[deleteAccount] Failed to delete events:', eventsDeleteError)
+    console.error('[deleteAccount] Failed to delete events:', eventsDeleteError.message)
     return { error: 'Could not delete event data. Contact support with reference: DEL-EVT.' }
   }
 
@@ -86,14 +86,14 @@ export async function deleteAccount() {
     .eq('id', orgId)
 
   if (orgDeleteError) {
-    console.error('[deleteAccount] Failed to delete organization:', orgDeleteError)
+    console.error('[deleteAccount] Failed to delete organization:', orgDeleteError.message)
     return { error: 'Could not delete organization data. Contact support with reference: DEL-ORG.' }
   }
 
   // Step 5: Delete the Supabase Auth user (must be last — user identity needed for auth checks above)
   const { error: authDeleteError } = await db.auth.admin.deleteUser(user.id)
   if (authDeleteError) {
-    console.error('[deleteAccount] Failed to delete auth user:', authDeleteError)
+    console.error('[deleteAccount] Failed to delete auth user:', authDeleteError.message)
     return { error: 'Account data was deleted but credentials could not be removed. Contact support with reference: DEL-AUTH.' }
   }
 

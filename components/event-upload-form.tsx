@@ -9,7 +9,6 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Progress } from '@/components/ui/progress'
-import { createClient } from '@/lib/supabase/client'
 import { compressImage, generateThumbnail, isImageFile, getMediaType } from '@/lib/image-compression'
 import { generateImageHash, isDuplicateImage } from '@/lib/image-hash'
 import { GUEST_TAGS, type GuestTag } from '@/lib/types'
@@ -17,6 +16,7 @@ import { UploadSuccess } from '@/components/upload-success'
 import { UploadProgressBar } from '@/components/upload-progress-bar'
 import { validateUploaderName, validateGuestTag, sanitizeInput } from '@/lib/validation-schemas'
 import { sendUploadNotification } from '@/app/actions/send-upload-email'
+import { requestSignedUploadUrl, confirmUpload } from '@/app/actions/guest-upload'
 import { toast } from 'sonner'
 
 interface Props {
@@ -38,16 +38,6 @@ interface UploadStatus {
 const MAX_IMAGE_SIZE_MB = 50
 const MAX_FILES = 50
 const GUEST_TOKEN_KEY = 'guest_upload_token'
-
-async function checkEventLimit(eventId: string): Promise<{ allowed: boolean; remaining: number | null; limit: number | null }> {
-  try {
-    const res = await fetch(`/api/upload/check-event-limit?eventId=${eventId}`)
-    if (!res.ok) return { allowed: true, remaining: null, limit: null } // fail open
-    return res.json()
-  } catch {
-    return { allowed: true, remaining: null, limit: null } // fail open on network errors
-  }
-}
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
@@ -96,36 +86,16 @@ export function EventUploadForm({ eventId, eventSlug, eventName, coupleNames, we
   }, [])
 
   const processFile = useCallback(async (file: File, index: number) => {
-    const supabase = createClient()
     try {
       updateUploadStatus(index, { status: 'compressing', progress: 5 })
 
-      // Magic-byte validation
+      // Magic-byte validation (server-side validation also occurs in requestSignedUploadUrl)
       const formData = new FormData()
       formData.append('file', file)
       const validateRes = await fetch('/api/upload/validate', { method: 'POST', body: formData })
       if (!validateRes.ok) {
         const { error } = await validateRes.json()
         throw new Error(error || 'File type not allowed')
-      }
-
-      // Per-event duplicate detection
-      if (isImageFile(file)) {
-        try {
-          const hash = await generateImageHash(file)
-          const { data: existing } = await supabase
-            .from('media')
-            .select('file_hash')
-            .eq('event_id', eventId)
-            .eq('uploaded_by', sanitizeInput(guestName))
-            .not('file_hash', 'is', null)
-
-          if (existing?.some(m => m.file_hash && isDuplicateImage(hash, m.file_hash))) {
-            throw new Error('Duplicate — already uploaded')
-          }
-        } catch (hashErr) {
-          if (hashErr instanceof Error && hashErr.message.includes('duplicate')) throw hashErr
-        }
       }
 
       updateUploadStatus(index, { progress: 10 })
@@ -143,57 +113,62 @@ export function EventUploadForm({ eventId, eventSlug, eventName, coupleNames, we
         thumbnailBlob = await generateThumbnail(file)
       }
 
-      updateUploadStatus(index, { status: 'uploading', progress: 40 })
+      updateUploadStatus(index, { status: 'uploading', progress: 30 })
 
-      const timestamp = Date.now()
-      const fileName = `${timestamp}-${Math.random().toString(36).slice(2, 9)}.jpg`
-      // Tenant-scoped storage path
-      const filePath = `${eventId}/uploads/${fileName}`
+      // Request a server-issued signed URL — server validates PIN, plan limits, rate limit
+      const urlResult = await requestSignedUploadUrl({
+        eventId,
+        fileName: file.name,
+        fileType: 'image/jpeg',
+        fileSize: fileToUpload.size,
+      })
 
-      const { error: uploadErr } = await supabase.storage
-        .from('wedding-media')
-        .upload(filePath, fileToUpload, { contentType: 'image/jpeg', cacheControl: '31536000' })
+      if ('error' in urlResult) throw new Error(urlResult.error)
+      const { uploadUrl, thumbnailUploadUrl, storagePath, thumbnailPath } = urlResult
 
-      if (uploadErr) throw uploadErr
+      updateUploadStatus(index, { progress: 40 })
 
-      updateUploadStatus(index, { progress: 70 })
+      // Upload directly to the signed URL (bypasses server bandwidth)
+      const uploadRes = await fetch(uploadUrl, {
+        method: 'PUT',
+        body: fileToUpload,
+        headers: { 'Content-Type': 'image/jpeg' },
+      })
+      if (!uploadRes.ok) throw new Error('Upload failed. Please try again.')
 
-      let thumbnailPath: string | undefined
+      updateUploadStatus(index, { progress: 65 })
+
       if (thumbnailBlob) {
-        thumbnailPath = `${eventId}/thumbnails/${timestamp}-thumb.jpg`
-        await supabase.storage
-          .from('wedding-media')
-          .upload(thumbnailPath, thumbnailBlob, { contentType: 'image/jpeg', cacheControl: '31536000' })
+        await fetch(thumbnailUploadUrl, {
+          method: 'PUT',
+          body: thumbnailBlob,
+          headers: { 'Content-Type': 'image/jpeg' },
+        })
       }
 
-      updateUploadStatus(index, { progress: 85 })
-
-      const { data: { publicUrl: fileUrl } } = supabase.storage
-        .from('wedding-media').getPublicUrl(filePath)
-      const thumbnailUrl = thumbnailPath
-        ? supabase.storage.from('wedding-media').getPublicUrl(thumbnailPath).data.publicUrl
-        : undefined
+      updateUploadStatus(index, { progress: 80 })
 
       let imageHash: string | null = null
       if (isImageFile(file)) {
         try { imageHash = await generateImageHash(file) } catch { /* non-critical */ }
       }
 
-      const { error: dbErr } = await supabase.from('media').insert({
-        event_id: eventId,   // stamped server-side from the slug lookup in the page
-        file_url: fileUrl,
-        thumbnail_url: thumbnailUrl,
-        media_type: getMediaType(file),
-        uploaded_by: sanitizeInput(guestName),
-        guest_tag: guestTag || null,
-        file_size: fileToUpload.size,
+      // Confirm upload server-side — server verifies file exists, inserts media row
+      const confirmResult = await confirmUpload({
+        eventId,
+        storagePath,
+        thumbnailPath,
+        uploadedBy: sanitizeInput(guestName),
+        guestTag: guestTag || null,
+        guestToken,
+        fileSize: fileToUpload.size,
+        fileHash: imageHash,
         width,
         height,
-        file_hash: imageHash,
-        guest_token: guestToken || null,
       })
 
-      if (dbErr) throw dbErr
+      if (!confirmResult.success) throw new Error(confirmResult.error ?? 'Upload confirmation failed')
+
       updateUploadStatus(index, { status: 'complete', progress: 100 })
     } catch (err) {
       updateUploadStatus(index, {
@@ -234,27 +209,6 @@ export function EventUploadForm({ eventId, eventSlug, eventName, coupleNames, we
     setUploads(prev => [...prev, ...newUploads])
     setIsUploading(true)
 
-    try {
-      const rateRes = await fetch('/api/upload/check-rate-limit', { method: 'POST' })
-      const rateData = await rateRes.json()
-      if (!rateData.allowed) {
-        toast.error('Upload limit reached', { description: 'You\'ve reached the maximum uploads per hour. Please try again later.' })
-        setIsUploading(false)
-        return
-      }
-    } catch { /* continue if check fails */ }
-
-    const limitCheck = await checkEventLimit(eventId)
-    if (!limitCheck.allowed) {
-      toast.error('Photo limit reached', { description: 'This event has reached its 200-photo limit. Contact the couple if you still want to share photos.' })
-      setIsUploading(false)
-      return
-    }
-    if (limitCheck.remaining !== null && accepted.length > limitCheck.remaining && limitCheck.remaining > 0) {
-      accepted.splice(limitCheck.remaining)
-      toast.warning(`Only ${limitCheck.remaining} photo slots remain. Uploading first ${limitCheck.remaining} of your ${files.length} files.`)
-    }
-
     const startIndex = uploads.length
     let nextIdx = 0
     async function worker() {
@@ -266,9 +220,9 @@ export function EventUploadForm({ eventId, eventSlug, eventName, coupleNames, we
     }
     await Promise.all(Array.from({ length: Math.min(3, accepted.length) }, worker))
 
-    sendUploadNotification(guestName, accepted.length, guestToken).catch(() => {})
+    sendUploadNotification(guestName, accepted.length, guestToken, eventId).catch(() => {})
     setIsUploading(false)
-  }, [processFile, uploads.length, guestName, guestToken])
+  }, [processFile, uploads.length, guestName, guestToken, eventId])
 
   const removeUpload = (index: number) => {
     setUploads(prev => {

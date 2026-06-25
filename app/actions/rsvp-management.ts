@@ -94,6 +94,16 @@ export async function updateGuestRsvp(
       return { success: false, error: 'Event not found' }
     }
 
+    // Confirm the guest row belongs to this event before writing with the admin client
+    const { data: guestCheck } = await supabase
+      .from('guests')
+      .select('id')
+      .eq('id', guestId)
+      .eq('event_id', eventId)
+      .single()
+
+    if (!guestCheck) return { success: false, error: 'Guest not found' }
+
     const db = createAdminClient()
     const { error } = await db
       .from('guests')
@@ -172,6 +182,16 @@ export async function deleteGuest(
     if (eventError || !eventCheck) {
       return { success: false, error: 'Event not found' }
     }
+
+    // Confirm the guest row belongs to this event before deleting with the admin client
+    const { data: guestCheck } = await supabase
+      .from('guests')
+      .select('id')
+      .eq('id', guestId)
+      .eq('event_id', eventId)
+      .single()
+
+    if (!guestCheck) return { success: false, error: 'Guest not found' }
 
     const db = createAdminClient()
     const { error } = await db

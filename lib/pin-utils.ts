@@ -1,26 +1,31 @@
-// PIN hashing using Web Crypto (SHA-256 + random salt).
-// Stored format: "<32-char hex salt>:<64-char sha256 hex>"
-// A PIN is a 4–6 digit code; this is sufficient for protecting casual access
-// from the DB. The salt prevents rainbow-table attacks across events.
+import bcrypt from 'bcryptjs'
+import type { VerifyPinResult } from '@/lib/types'
+
+const BCRYPT_ROUNDS = 12
 
 export async function hashPin(pin: string): Promise<string> {
-  const saltBytes = crypto.getRandomValues(new Uint8Array(16))
-  const salt = Array.from(saltBytes).map(b => b.toString(16).padStart(2, '0')).join('')
-  const digest = await sha256Hex(pin + salt)
-  return `${salt}:${digest}`
+  return bcrypt.hash(pin, BCRYPT_ROUNDS)
 }
 
-export async function verifyPin(pin: string, stored: string): Promise<boolean> {
+// Detects legacy SHA-256 format ("<32-char hex salt>:<64-char hex digest>") and
+// returns needsRehash=true on a successful match so the caller can upgrade transparently.
+export async function verifyPin(pin: string, stored: string): Promise<VerifyPinResult> {
+  if (stored.startsWith('$2b$') || stored.startsWith('$2a$')) {
+    const valid = await bcrypt.compare(pin, stored)
+    return { valid, needsRehash: false }
+  }
+
+  // Legacy SHA-256 path — constant-time comparison
   const [salt, expected] = stored.split(':')
-  if (!salt || !expected) return false
+  if (!salt || !expected) return { valid: false, needsRehash: false }
   const actual = await sha256Hex(pin + salt)
-  // Constant-time comparison to avoid timing attacks
-  if (actual.length !== expected.length) return false
+  if (actual.length !== expected.length) return { valid: false, needsRehash: false }
   let diff = 0
   for (let i = 0; i < actual.length; i++) {
     diff |= actual.charCodeAt(i) ^ expected.charCodeAt(i)
   }
-  return diff === 0
+  const valid = diff === 0
+  return { valid, needsRehash: valid }
 }
 
 async function sha256Hex(input: string): Promise<string> {

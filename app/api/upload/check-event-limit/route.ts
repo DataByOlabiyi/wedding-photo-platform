@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { checkUploadRateLimit } from '@/lib/rate-limit'
+import { checkUploadRateLimit, getIp } from '@/lib/rate-limit'
 import { PLAN_LIMITS } from '@/lib/plan-limits'
 
 // Guest-facing public endpoint: no user session exists. Admin client is required because
@@ -11,10 +11,7 @@ import { PLAN_LIMITS } from '@/lib/plan-limits'
 const eventIdSchema = z.string().uuid()
 
 export async function GET(request: NextRequest) {
-  const ip =
-    request.headers.get('x-vercel-forwarded-for')?.split(',')[0].trim() ??
-    request.headers.get('x-forwarded-for')?.split(',')[0].trim() ??
-    '127.0.0.1'
+  const ip = getIp(request.headers)
 
   const { allowed } = await checkUploadRateLimit(ip)
   if (!allowed) {

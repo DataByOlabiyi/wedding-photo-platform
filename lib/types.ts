@@ -50,6 +50,18 @@ export interface Guest {
   uploaded_at?: string | null
 }
 
+export type SignedUploadUrlResult = {
+  uploadUrl: string
+  thumbnailUploadUrl: string
+  storagePath: string
+  thumbnailPath: string
+}
+
+export type VerifyPinResult = {
+  valid: boolean
+  needsRehash: boolean
+}
+
 export const GUEST_TAGS = [
   "Bride's Friend",
   "Bride's Family",

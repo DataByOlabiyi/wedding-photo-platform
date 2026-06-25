@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 
+const ALLOWED_NEXT_PATHS = new Set(['/dashboard', '/dashboard/events', '/onboarding', '/settings'])
+
 function sanitizeNext(next: string): string {
-  if (next.includes('://') || next.includes('\\') || !/^\/[^/]/.test(next)) return '/dashboard'
-  return next
+  return ALLOWED_NEXT_PATHS.has(next) ? next : '/dashboard'
 }
 
 // Supabase Auth redirects here after email confirmation.

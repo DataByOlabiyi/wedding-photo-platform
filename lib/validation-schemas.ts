@@ -86,6 +86,35 @@ export function validateGuestTag(tag: string | null | undefined): { valid: boole
   }
 }
 
+const uuidSchema = z.string().uuid()
+const MAX_UPLOAD_BYTES = 50 * 1024 * 1024 // 50 MB
+
+// Inputs for requesting a server-issued signed upload URL
+export const requestUploadUrlSchema = z.object({
+  eventId: uuidSchema,
+  fileName: z.string().min(1).max(256),
+  fileType: z.string().regex(/^image\//, 'Only image files are allowed'),
+  fileSize: z.number().int().positive().max(MAX_UPLOAD_BYTES, 'File exceeds 50 MB limit'),
+})
+
+export type RequestUploadUrlInput = z.infer<typeof requestUploadUrlSchema>
+
+// Inputs for confirming a completed upload and inserting the media row
+export const confirmUploadSchema = z.object({
+  eventId: uuidSchema,
+  storagePath: z.string().min(1).max(512).refine(s => !s.includes('..'), 'Invalid path'),
+  thumbnailPath: z.string().min(1).max(512).refine(s => !s.includes('..'), 'Invalid path').optional(),
+  uploadedBy: z.string().min(1).max(100),
+  guestTag: z.string().max(50).nullable().optional(),
+  guestToken: uuidSchema,
+  fileSize: z.number().int().positive(),
+  fileHash: z.string().max(128).nullable().optional(),
+  width: z.number().int().positive().optional(),
+  height: z.number().int().positive().optional(),
+})
+
+export type ConfirmUploadInput = z.infer<typeof confirmUploadSchema>
+
 // Validate admin login password
 export function validateAdminPassword(password: string): { valid: boolean; error?: string } {
   try {

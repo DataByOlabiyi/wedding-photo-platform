@@ -41,7 +41,7 @@ export default function SignupPage() {
     })
 
     if (error) {
-      toast.error('Signup failed', { description: error.message })
+      toast.error('Could not create account. Check your details and try again.')
       setLoading(false)
       return
     }
