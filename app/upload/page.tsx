@@ -49,6 +49,12 @@ interface UploadStatus {
 const MAX_IMAGE_SIZE_MB = 50
 const MAX_FILES = 50
 
+// This deployment is single-tenant — every upload belongs to the one legacy
+// event seeded in migration 007. Required because migration 014/016 (applied
+// to this project's DB ahead of the SaaS rollout) tightened the media INSERT
+// RLS policy to require event_id on an open event; this app predates events.
+const LEGACY_EVENT_SLUG = "bm-wedding-2025"
+
 const GUEST_TOKEN_KEY = 'guest_upload_token'
 
 function getOrCreateGuestToken(): string {
@@ -112,7 +118,7 @@ export default function UploadPage() {
   )
 
   const processFile = useCallback(
-    async (file: File, index: number) => {
+    async (file: File, index: number, eventId: string) => {
       const supabase = createClient()
 
       try {
@@ -235,6 +241,7 @@ export default function UploadPage() {
         const { data: mediaData, error: dbError } = await supabase
           .from("media")
           .insert({
+            event_id: eventId,
             file_url: fileUrl,
             thumbnail_url: thumbnailUrl,
             media_type: getMediaType(file),
@@ -319,6 +326,21 @@ export default function UploadPage() {
 
       setIsUploading(true)
 
+      const supabase = createClient()
+      const { data: eventRow, error: eventError } = await supabase
+        .from("events")
+        .select("id")
+        .eq("slug", LEGACY_EVENT_SLUG)
+        .single()
+
+      if (eventError || !eventRow) {
+        toast.error("Upload unavailable", { description: "Could not find the event. Please contact the couple." })
+        setUploads((prev) => prev.map((u) => (newUploads.includes(u) ? { ...u, status: "error", error: "Event not found" } : u)))
+        setIsUploading(false)
+        return
+      }
+      const eventId = eventRow.id as string
+
       // Check rate limit before starting uploads
       try {
         const rateCheckResponse = await fetch('/api/upload/check-rate-limit', {
@@ -344,7 +366,7 @@ export default function UploadPage() {
         while (true) {
           const fileIndex = nextFileIndex++
           if (fileIndex >= acceptedFiles.length) break
-          await processFile(acceptedFiles[fileIndex], startIndex + fileIndex)
+          await processFile(acceptedFiles[fileIndex], startIndex + fileIndex, eventId)
         }
       }
       const workers = Array.from({ length: Math.min(3, acceptedFiles.length) }, worker)
