@@ -345,6 +345,8 @@ export default function UploadPage() {
       try {
         const rateCheckResponse = await fetch('/api/upload/check-rate-limit', {
           method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ guestToken }),
         })
         const rateCheckData = await rateCheckResponse.json()
 
