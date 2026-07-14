@@ -1,3 +1,5 @@
+import { Card, CardContent, CardHeader } from '@/components/ui/card'
+
 export function GalleryGridSkeleton({ count = 12 }: { count?: number }) {
   return (
     <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
@@ -11,66 +13,71 @@ export function GalleryGridSkeleton({ count = 12 }: { count?: number }) {
   )
 }
 
-export function FolderCardSkeleton({ count = 6 }: { count?: number }) {
+export function EventsGridSkeleton({ count = 6 }: { count?: number }) {
   return (
-    <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+    <div className="grid animate-pulse gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {Array.from({ length: count }).map((_, i) => (
-        <div key={i} className="space-y-3 animate-pulse">
-          <div className="aspect-square rounded-xl bg-muted" />
-          <div className="space-y-2">
-            <div className="h-4 bg-muted rounded w-3/4" />
-            <div className="h-3 bg-muted rounded w-1/2" />
-          </div>
-        </div>
+        <Card key={i}>
+          <CardHeader className="pb-3">
+            <div className="flex items-start justify-between gap-2">
+              <div className="h-5 w-32 rounded bg-muted" />
+              <div className="h-5 w-14 shrink-0 rounded-md bg-muted" />
+            </div>
+            <div className="mt-2 h-3.5 w-24 rounded bg-muted" />
+            <div className="mt-1.5 h-3 w-28 rounded bg-muted" />
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="h-3.5 w-12 rounded bg-muted" />
+              <div className="h-3.5 w-6 rounded bg-muted" />
+            </div>
+            <div className="flex gap-2">
+              <div className="h-8 flex-1 rounded-full bg-muted" />
+              <div className="h-8 w-8 rounded-full bg-muted" />
+              <div className="h-8 w-8 rounded-full bg-muted" />
+            </div>
+            <div className="h-3 w-32 rounded bg-muted" />
+          </CardContent>
+        </Card>
       ))}
     </div>
   )
 }
 
-export function HeroSkeleton() {
+export function EventHeaderSkeleton() {
   return (
-    <section className="container mx-auto px-4 py-12 space-y-8 animate-pulse">
-      <div className="text-center space-y-4">
-        <div className="h-12 bg-muted rounded w-2/3 mx-auto" />
-        <div className="h-6 bg-muted rounded w-3/4 mx-auto" />
-      </div>
-      <div className="grid grid-cols-2 gap-8 max-w-sm mx-auto">
-        <div className="space-y-2 text-center">
-          <div className="h-8 bg-muted rounded" />
-          <div className="h-4 bg-muted rounded" />
+    <div className="mb-8 flex animate-pulse flex-col items-start justify-between gap-4 sm:flex-row">
+      <div className="space-y-1">
+        <div className="flex items-center gap-3">
+          <div className="h-8 w-8 rounded-xl bg-muted" />
+          <div className="h-7 w-48 rounded bg-muted" />
+          <div className="h-5 w-14 rounded-md bg-muted" />
         </div>
-        <div className="space-y-2 text-center">
-          <div className="h-8 bg-muted rounded" />
-          <div className="h-4 bg-muted rounded" />
-        </div>
+        <div className="h-4 w-20 rounded bg-muted pl-10" />
       </div>
-    </section>
-  )
-}
-
-export function MediaLightboxSkeleton() {
-  return (
-    <div className="animate-pulse space-y-4">
-      <div className="aspect-video bg-muted rounded-lg" />
-      <div className="space-y-2">
-        <div className="h-4 bg-muted rounded" />
-        <div className="h-4 bg-muted rounded w-3/4" />
+      <div className="flex items-center gap-2 pl-10 sm:pl-0">
+        <div className="h-8 w-28 rounded-full bg-muted" />
+        <div className="h-8 w-24 rounded-full bg-muted" />
       </div>
     </div>
   )
 }
 
-export function HeaderSkeleton() {
+export function StatCardsSkeleton() {
   return (
-    <header className="border-b border-border/50 bg-background/95 animate-pulse">
-      <div className="container mx-auto flex h-16 items-center justify-between px-4">
-        <div className="h-8 bg-muted rounded w-32" />
-        <div className="flex gap-2">
-          <div className="h-10 w-10 bg-muted rounded" />
-          <div className="h-10 w-10 bg-muted rounded" />
-        </div>
-      </div>
-    </header>
+    <div className="grid animate-pulse grid-cols-2 gap-4 sm:grid-cols-4">
+      {Array.from({ length: 4 }).map((_, i) => (
+        <Card key={i}>
+          <CardContent className="pt-5">
+            <div className="mb-1 flex items-center gap-2">
+              <div className="h-4 w-4 rounded bg-muted" />
+              <div className="h-3 w-16 rounded bg-muted" />
+            </div>
+            <div className="h-7 w-12 rounded bg-muted" />
+          </CardContent>
+        </Card>
+      ))}
+    </div>
   )
 }
 
