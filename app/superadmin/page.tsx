@@ -44,14 +44,13 @@ export default async function SuperAdminPage({
     <div className="min-h-screen bg-background">
       <header className="border-b border-border/40 bg-background/95 backdrop-blur sticky top-0 z-40">
         <div className="container mx-auto flex h-16 items-center gap-3 px-4">
-          <Shield className="h-5 w-5 text-destructive" />
-          <h1 className="font-serif text-lg font-semibold">Platform Admin</h1>
-          <Badge variant="destructive" className="text-xs">Superadmin</Badge>
+          <Shield className="h-4 w-4 text-destructive" />
+          <h1 className="text-sm font-semibold tracking-[0.01em]">Platform Admin</h1>
+          <Badge variant="destructive">Superadmin</Badge>
         </div>
       </header>
 
-      <main className="container mx-auto max-w-5xl px-4 py-8 space-y-8">
-        {/* Platform stats */}
+      <main className="container mx-auto max-w-6xl px-4 py-8 space-y-8">
         <div className="grid gap-4 grid-cols-2 sm:grid-cols-4">
           {[
             { label: 'Organizations', value: (orgs ?? []).length, icon: Users },
@@ -63,15 +62,14 @@ export default async function SuperAdminPage({
               <CardContent className="pt-5">
                 <div className="flex items-center gap-2 mb-1">
                   <Icon className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-xs text-muted-foreground">{label}</span>
+                  <span className="text-caption text-muted-foreground">{label}</span>
                 </div>
-                <p className="text-2xl font-semibold">{value.toLocaleString()}</p>
+                <p className="font-mono text-2xl font-medium">{value.toLocaleString()}</p>
               </CardContent>
             </Card>
           ))}
         </div>
 
-        {/* Organization list */}
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Organizations</CardTitle>
@@ -82,13 +80,13 @@ export default async function SuperAdminPage({
                 <div key={org.id} className="flex items-center justify-between gap-4 px-6 py-4">
                   <div className="min-w-0">
                     <p className="font-medium truncate">{org.name}</p>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="font-mono text-xs text-muted-foreground">
                       {org.slug} · {eventsByOrg[org.id] ?? 0} events ·{' '}
                       {new Date(org.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                     </p>
                   </div>
                   <div className="flex items-center gap-3 shrink-0">
-                    <Badge variant={org.plan === 'pro' ? 'default' : 'secondary'} className="capitalize">
+                    <Badge variant={org.plan === 'pro' ? 'default' : 'secondary'}>
                       {org.plan}
                     </Badge>
                     <PlanOverrideForm orgId={org.id} currentPlan={org.plan as 'starter' | 'pro'} />
@@ -103,7 +101,6 @@ export default async function SuperAdminPage({
           </CardContent>
         </Card>
 
-        {/* Event lookup */}
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Event lookup</CardTitle>
@@ -120,7 +117,7 @@ export default async function SuperAdminPage({
             {q && matchedEvents && (
               <>
                 {matchedEvents.data && matchedEvents.data.length > 0 ? (
-                  <div className="divide-y divide-border rounded-md border">
+                  <div className="divide-y divide-border rounded-lg border">
                     {matchedEvents.data.map(event => {
                       const orgData = Array.isArray(event.organizations)
                         ? event.organizations[0]
@@ -130,7 +127,7 @@ export default async function SuperAdminPage({
                           <div className="min-w-0 space-y-0.5">
                             <p className="font-medium truncate">{event.name}</p>
                             <p className="text-xs text-muted-foreground">
-                              <code className="rounded bg-muted px-1 py-0.5">{event.slug}</code>
+                              <code className="rounded-sm bg-muted px-1 py-0.5 font-mono">{event.slug}</code>
                               {event.couple_names && (
                                 <span> · {event.couple_names}</span>
                               )}
@@ -143,14 +140,11 @@ export default async function SuperAdminPage({
                           </div>
                           <div className="flex items-center gap-2 shrink-0">
                             {orgData && (
-                              <Badge variant={orgData.plan === 'pro' ? 'default' : 'secondary'} className="capitalize text-xs">
+                              <Badge variant={orgData.plan === 'pro' ? 'default' : 'secondary'}>
                                 {orgData.plan}
                               </Badge>
                             )}
-                            <Badge
-                              variant={event.status === 'active' ? 'default' : 'secondary'}
-                              className="capitalize text-xs"
-                            >
+                            <Badge variant={event.status === 'active' ? 'default' : 'secondary'}>
                               {event.status}
                             </Badge>
                             <a

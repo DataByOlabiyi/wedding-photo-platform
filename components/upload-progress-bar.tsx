@@ -10,13 +10,13 @@ export function UploadProgressBar({ current, total }: UploadProgressBarProps) {
 
   return (
     <div className="w-full space-y-2">
-      <div className="flex justify-between items-center">
-        <p className="text-sm font-medium text-foreground">
-          Uploading: {current} of {total} files
+      <div className="flex items-center justify-between">
+        <p className="text-caption text-muted-foreground">
+          Uploading <span className="font-mono text-foreground">{current}</span> of <span className="font-mono text-foreground">{total}</span>
         </p>
-        <p className="text-sm font-semibold text-primary">{percentage}%</p>
+        <p className="font-mono text-data text-foreground">{percentage}%</p>
       </div>
-      <Progress value={percentage} className="h-2" />
+      <Progress value={percentage} className="h-1.5" />
     </div>
   )
 }

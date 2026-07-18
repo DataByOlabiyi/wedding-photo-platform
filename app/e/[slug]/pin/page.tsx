@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { Lock, Loader2, Heart } from 'lucide-react'
+import { Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -36,15 +36,13 @@ export default function PinPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background px-4">
+    <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="w-full max-w-xs space-y-8 text-center">
-        <div className="space-y-2">
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
-            <Lock className="h-7 w-7 text-primary" />
-          </div>
-          <h1 className="font-serif text-2xl font-semibold">Enter PIN</h1>
+        <div className="space-y-3">
+          <p className="text-caption uppercase tracking-[0.09em] text-muted-foreground/80">Private event</p>
+          <h1 className="font-serif text-heading">Enter the PIN</h1>
           <p className="text-sm text-muted-foreground">
-            This event is PIN-protected. Enter the code shared by the couple.
+            This gallery is protected. Enter the code shared by the couple.
           </p>
         </div>
 
@@ -59,13 +57,13 @@ export default function PinPage() {
               maxLength={6}
               value={pin}
               onChange={e => setPin(e.target.value.replace(/\D/g, ''))}
-              placeholder="Enter PIN"
-              className="text-center text-xl tracking-widest h-14 rounded-xl"
+              placeholder="PIN"
+              className="h-14 rounded-lg text-center font-mono text-2xl tracking-[0.3em] placeholder:font-sans placeholder:text-base placeholder:tracking-normal"
               autoFocus
               required
             />
           </div>
-          <Button type="submit" className="w-full rounded-full h-12" disabled={loading || pin.length < 4}>
+          <Button type="submit" className="h-12 w-full" disabled={loading || pin.length < 4}>
             {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Continue'}
           </Button>
         </form>

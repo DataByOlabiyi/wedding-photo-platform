@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { Heart, Loader2, ArrowLeft } from 'lucide-react'
+import { Loader2, ArrowLeft } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -35,33 +35,33 @@ export default function ForgotPasswordPage() {
 
   if (sent) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background px-4">
-        <div className="w-full max-w-sm space-y-6 text-center">
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-            <Heart className="h-6 w-6 text-primary" />
+      <div className="flex min-h-screen items-center justify-center bg-background px-4">
+        <div className="w-full max-w-sm space-y-8">
+          <div className="space-y-3 text-center">
+            <p className="text-caption uppercase tracking-[0.09em] text-muted-foreground/80">SnapEvent</p>
+            <h1 className="font-serif text-heading">Check your email</h1>
+            <p className="text-sm text-muted-foreground">
+              We sent a password reset link to <strong>{email}</strong>. Click the link in your email to set a new password.
+            </p>
           </div>
-          <h1 className="font-serif text-2xl font-semibold">Check your email</h1>
-          <p className="text-sm text-muted-foreground">
-            We sent a password reset link to <strong>{email}</strong>. Click the link in your email to set a new password.
-          </p>
-          <Link href="/auth/login">
-            <Button variant="outline" className="rounded-full">
-              Back to sign in
-            </Button>
-          </Link>
+          <div className="text-center">
+            <Link href="/auth/login">
+              <Button variant="outline" className="h-11">
+                Back to sign in
+              </Button>
+            </Link>
+          </div>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background px-4">
+    <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="w-full max-w-sm space-y-8">
-        <div className="text-center space-y-2">
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-            <Heart className="h-6 w-6 text-primary" />
-          </div>
-          <h1 className="font-serif text-2xl font-semibold">Reset your password</h1>
+        <div className="space-y-3 text-center">
+          <p className="text-caption uppercase tracking-[0.09em] text-muted-foreground/80">SnapEvent</p>
+          <h1 className="font-serif text-heading">Reset your password</h1>
           <p className="text-sm text-muted-foreground">Enter your email and we&apos;ll send you a reset link.</p>
         </div>
 
@@ -78,13 +78,13 @@ export default function ForgotPasswordPage() {
               autoComplete="email"
             />
           </div>
-          <Button type="submit" className="w-full rounded-full" disabled={loading}>
+          <Button type="submit" className="h-11 w-full" disabled={loading}>
             {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Send reset link'}
           </Button>
         </form>
 
         <p className="text-center">
-          <Link href="/auth/login" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground underline underline-offset-4">
+          <Link href="/auth/login" className="inline-flex min-h-11 items-center gap-1.5 text-sm text-muted-foreground underline underline-offset-4">
             <ArrowLeft className="h-3.5 w-3.5" />
             Back to sign in
           </Link>

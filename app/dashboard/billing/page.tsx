@@ -46,18 +46,19 @@ export default async function BillingPage() {
 
   return (
     <div className="max-w-2xl space-y-8">
-      <div>
-        <h1 className="font-serif text-3xl font-semibold">Billing & plan</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Current plan: <span className="font-medium capitalize">{currentPlan}</span>
+      <div className="space-y-1.5">
+        <p className="text-caption uppercase tracking-[0.09em] text-muted-foreground/80">Account</p>
+        <h1 className="font-serif text-heading">Billing & plan</h1>
+        <p className="text-body text-muted-foreground">
+          Current plan: <span className="font-medium capitalize text-foreground">{currentPlan}</span>
         </p>
       </div>
 
       {process.env.NEXT_PUBLIC_BETA_FREE_PRO === "true" && (
-        <Alert className="border-amber-400/60 bg-amber-50 text-amber-900 dark:bg-amber-950/40 dark:text-amber-200 dark:border-amber-500/40">
-          <Zap className="h-4 w-4 text-amber-500" />
+        <Alert className="border-transparent bg-warning text-warning-foreground">
+          <Zap className="h-4 w-4" />
           <AlertTitle>Beta — Pro is free</AlertTitle>
-          <AlertDescription>
+          <AlertDescription className="text-warning-foreground">
             You&apos;re on the Pro plan for free during our beta. All features are enabled — no payment required.
           </AlertDescription>
         </Alert>
@@ -72,8 +73,8 @@ export default async function BillingPage() {
           {/* Events row */}
           <div className="space-y-1.5">
             <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Events</span>
-              <span className="font-medium">
+              <span className="text-caption text-muted-foreground">Events</span>
+              <span className="font-mono text-data">
                 {eventCount ?? 0}{currentPlan === 'starter' ? ' / 1' : ''}
               </span>
             </div>
@@ -93,21 +94,24 @@ export default async function BillingPage() {
           {currentPlan === 'starter' && (
             <div className="space-y-1.5">
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Photos (current event)</span>
-                <span className={`font-medium ${photoCount >= 200 ? 'text-destructive' : ''}`}>
+                <span className="text-caption text-muted-foreground">Photos (current event)</span>
+                <span className={`font-mono text-data ${photoCount >= 200 ? 'text-destructive' : ''}`}>
                   {photoCount} / 200
                 </span>
               </div>
               <div className="h-1.5 rounded-full bg-muted overflow-hidden">
                 <div
                   className={`h-full rounded-full transition-all ${
-                    photoCount >= 200 ? 'bg-destructive' : photoCount >= 160 ? 'bg-amber-500' : 'bg-primary'
+                    photoCount >= 200 ? 'bg-destructive' : photoCount >= 160 ? 'bg-warning' : 'bg-primary'
                   }`}
                   style={{ width: `${Math.min(100, (photoCount / 200) * 100)}%` }}
                 />
               </div>
               {photoCount >= 160 && photoCount < 200 && (
-                <p className="text-xs text-amber-500">Approaching the 200-photo limit. Upgrade to Pro for unlimited photos.</p>
+                <p className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                  <Badge className="border-transparent bg-warning text-warning-foreground">Nearing limit</Badge>
+                  Upgrade to Pro for unlimited photos.
+                </p>
               )}
               {photoCount >= 200 && (
                 <p className="text-xs text-destructive">Photo limit reached. Guests cannot upload more photos until you upgrade.</p>
@@ -117,7 +121,7 @@ export default async function BillingPage() {
 
           {currentPlan === 'pro' && (
             <p className="text-sm text-muted-foreground">
-              {eventCount ?? 0} event{(eventCount ?? 0) !== 1 ? 's' : ''} · Unlimited photos
+              <span className="font-mono text-data">{eventCount ?? 0}</span> event{(eventCount ?? 0) !== 1 ? 's' : ''} · Unlimited photos
             </p>
           )}
         </CardContent>
@@ -156,7 +160,7 @@ export default async function BillingPage() {
               <Zap className="h-4 w-4 text-primary" />
               {PAYSTACK_PLAN.label}
             </CardTitle>
-            <CardDescription>&#x20A6;19,000 / month</CardDescription>
+            <CardDescription><span className="font-mono text-data text-foreground">&#x20A6;19,000</span> / month</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <ul className="space-y-2">

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { Heart, Loader2 } from 'lucide-react'
+import { Loader2 } from 'lucide-react'
 import { createOrgAndFirstEvent } from '@/app/actions/onboarding'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -28,12 +28,10 @@ export default function OnboardingPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-background px-4">
       <div className="w-full max-w-md space-y-8">
-        <div className="text-center space-y-2">
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-            <Heart className="h-6 w-6 text-primary" />
-          </div>
-          <h1 className="font-serif text-2xl font-semibold">Set up your event</h1>
-          <p className="text-sm text-muted-foreground">
+        <div className="space-y-2 text-center">
+          <p className="text-caption uppercase tracking-[0.09em] text-muted-foreground/80">Welcome</p>
+          <h1 className="font-serif text-heading">Set up your event</h1>
+          <p className="text-body text-muted-foreground">
             A few details to get your wedding gallery ready.
           </p>
         </div>
@@ -91,7 +89,7 @@ export default function OnboardingPage() {
             <p className="text-sm text-destructive">{error}</p>
           )}
 
-          <Button type="submit" className="w-full rounded-full" disabled={isPending}>
+          <Button type="submit" className="w-full" disabled={isPending}>
             {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Create my gallery'}
           </Button>
         </form>

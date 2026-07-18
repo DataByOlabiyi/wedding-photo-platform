@@ -24,7 +24,7 @@ export function UpgradeButton() {
   }
 
   return (
-    <Button onClick={handleUpgrade} disabled={loading} className="w-full gap-2 rounded-full">
+    <Button onClick={handleUpgrade} disabled={loading} className="w-full gap-2">
       {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4" />}
       Upgrade to Pro
     </Button>

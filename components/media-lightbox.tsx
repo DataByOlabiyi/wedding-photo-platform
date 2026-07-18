@@ -171,27 +171,25 @@ export function MediaLightbox({
   return (
     <>
       <div
-        className="fixed inset-0 z-50 flex items-center justify-center bg-neutral-950/97 backdrop-blur-sm"
+        className="fixed inset-0 z-50 flex items-center justify-center bg-background/97 backdrop-blur-sm"
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
       >
-        {/* Close button */}
         <Button
           variant="ghost"
           size="icon"
-          className="absolute right-4 top-4 z-10 h-10 w-10 rounded-full bg-white/10 text-white hover:bg-white/20"
+          className="absolute right-4 top-4 z-10 size-11 rounded-full bg-card/90 text-foreground ring-1 ring-border hover:bg-card"
           onClick={onClose}
         >
           <X className="h-5 w-5" />
           <span className="sr-only">Close</span>
         </Button>
 
-        {/* Navigation buttons */}
         {hasPrevious && (
           <Button
             variant="ghost"
             size="icon"
-            className="absolute left-4 top-1/2 z-10 h-12 w-12 -translate-y-1/2 rounded-full bg-white/10 text-white hover:bg-white/20"
+            className="absolute left-4 top-1/2 z-10 size-12 -translate-y-1/2 rounded-full bg-card/90 text-foreground ring-1 ring-border hover:bg-card"
             onClick={onPrevious}
           >
             <ChevronLeft className="h-6 w-6" />
@@ -203,7 +201,7 @@ export function MediaLightbox({
           <Button
             variant="ghost"
             size="icon"
-            className="absolute right-4 top-1/2 z-10 h-12 w-12 -translate-y-1/2 rounded-full bg-white/10 text-white hover:bg-white/20"
+            className="absolute right-4 top-1/2 z-10 size-12 -translate-y-1/2 rounded-full bg-card/90 text-foreground ring-1 ring-border hover:bg-card"
             onClick={onNext}
           >
             <ChevronRight className="h-6 w-6" />
@@ -211,7 +209,6 @@ export function MediaLightbox({
           </Button>
         )}
 
-        {/* Media content */}
         <div className="relative flex h-full w-full items-center justify-center p-4 sm:p-16">
           {isVideo ? (
             <div className="relative w-full max-w-4xl">
@@ -237,15 +234,14 @@ export function MediaLightbox({
           )}
         </div>
 
-        {/* Bottom info bar */}
-        <div className="absolute bottom-0 left-0 right-0 flex items-center justify-between bg-gradient-to-t from-black/80 to-transparent p-4 pt-16 sm:p-6 sm:pt-20">
+        <div className="absolute bottom-0 left-0 right-0 flex items-center justify-between bg-gradient-to-t from-background/90 to-transparent p-4 pt-16 sm:p-6 sm:pt-20">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/20 text-sm font-semibold text-white backdrop-blur-sm">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-secondary text-sm font-semibold text-secondary-foreground">
               {initials || <User className="h-4 w-4" />}
             </div>
             <div>
-              <p className="font-medium text-white">{media.uploaded_by}</p>
-              <p className="text-sm text-white/70">
+              <p className="font-medium text-foreground">{media.uploaded_by}</p>
+              <p className="font-mono text-data text-muted-foreground">
                 {new Date(media.uploaded_at).toLocaleDateString("en-US", {
                   month: "short",
                   day: "numeric",
@@ -257,14 +253,14 @@ export function MediaLightbox({
 
           <div className="flex items-center gap-3">
             {currentIndex !== undefined && totalCount !== undefined && (
-              <span className="text-sm text-white/70">
+              <span className="font-mono text-data text-muted-foreground">
                 {currentIndex + 1} / {totalCount}
               </span>
             )}
             <Button
               variant="ghost"
               size="icon"
-              className="h-10 w-10 rounded-full bg-white/10 text-white hover:bg-white/20"
+              className="size-11 rounded-full bg-card/90 text-foreground ring-1 ring-border hover:bg-card"
               onClick={handleDownload}
             >
               <Download className="h-5 w-5" />
@@ -275,7 +271,7 @@ export function MediaLightbox({
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-10 w-10 rounded-full bg-destructive/20 text-white hover:bg-destructive/40"
+                className="size-11 rounded-full bg-card/90 text-destructive ring-1 ring-border hover:bg-destructive/10"
                 onClick={() => setDeleteDialogOpen(true)}
                 disabled={isDeleting}
                 title={isAdminMode ? "Delete photo" : `Delete photo (${formatTimeRemaining(msRemaining)} remaining)`}

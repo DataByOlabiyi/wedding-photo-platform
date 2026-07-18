@@ -2,8 +2,7 @@
 
 import { useState, useRef, useCallback } from 'react'
 import {
-  ArrowLeft, Camera, Upload, CheckCircle2, AlertCircle,
-  Loader2, ImagePlus, X, Heart, Sparkles, User, Tag, ArrowRight,
+  Upload, CheckCircle2, AlertCircle, Loader2, X,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -240,67 +239,52 @@ export function EventUploadForm({ eventId, eventSlug, eventName, coupleNames, we
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="sticky top-0 z-40 border-b border-border/50 bg-background/95 backdrop-blur">
+      <header className="sticky top-0 z-40 border-b border-border/60 bg-background/95 backdrop-blur">
         <div className="container mx-auto flex h-16 items-center justify-between px-4">
-          <div className="flex items-center gap-2">
-            <Heart className="h-4 w-4 text-primary" fill="currentColor" />
-            <span className="font-serif text-lg font-semibold">{coupleNames ?? eventName}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Camera className="h-4 w-4 text-primary" />
-            <span className="font-medium text-sm">Add Photos</span>
-          </div>
+          <span className="truncate font-serif text-lg tracking-tight">{coupleNames ?? eventName}</span>
+          <span className="shrink-0 text-caption uppercase tracking-[0.09em] text-muted-foreground/80">Add photos</span>
         </div>
       </header>
 
       <main className="container mx-auto max-w-2xl px-4 py-8">
         {step === 'info' && (
-          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="mb-8 text-center">
-              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
-                <Heart className="h-8 w-8 text-primary" />
-              </div>
-              <h1 className="font-serif text-3xl font-semibold">Share Your Memories</h1>
+          <div>
+            <div className="mb-8 space-y-3 text-center">
               {weddingDate && (
-                <p className="mt-1 text-sm text-muted-foreground">
+                <p className="font-mono text-data text-muted-foreground">
                   {new Date(weddingDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
                 </p>
               )}
-              <p className="mt-2 text-muted-foreground">Tell us a bit about yourself first</p>
+              <h1 className="font-serif text-heading">Share your photos</h1>
+              <p className="text-sm text-muted-foreground">First, tell us who you are.</p>
             </div>
 
             <form onSubmit={handleInfoSubmit} className="space-y-6">
               <div className="space-y-2">
-                <Label htmlFor="name" className="flex items-center gap-2 text-sm font-medium">
-                  <User className="h-4 w-4 text-muted-foreground" />
-                  Your Name
-                </Label>
+                <Label htmlFor="name">Your name</Label>
                 <Input
                   id="name"
                   type="text"
                   placeholder="Enter your full name"
                   value={guestName}
                   onChange={e => setGuestName(e.target.value)}
-                  className="h-12 rounded-xl text-base"
+                  className="h-12 rounded-lg text-base"
                   required
                 />
               </div>
 
               <div className="space-y-3">
-                <Label className="flex items-center gap-2 text-sm font-medium">
-                  <Tag className="h-4 w-4 text-muted-foreground" />
-                  How do you know the couple?
-                </Label>
+                <Label>How do you know the couple?</Label>
                 <div className="grid grid-cols-2 gap-3">
                   {GUEST_TAGS.map(tag => (
                     <button
                       key={tag}
                       type="button"
                       onClick={() => setGuestTag(tag)}
-                      className={`flex items-center justify-center rounded-xl border-2 px-4 py-3 text-sm font-medium transition-all ${
+                      className={`flex min-h-11 items-center justify-center rounded-full border px-4 py-2 text-sm font-medium transition-colors duration-150 ${
                         guestTag === tag
-                          ? 'border-primary bg-primary/10 text-primary'
-                          : 'border-border bg-card text-foreground hover:border-primary/50'
+                          ? 'border-transparent bg-primary text-primary-foreground'
+                          : 'border-input bg-card text-foreground hover:border-ring/60'
                       }`}
                     >
                       {tag}
@@ -309,27 +293,23 @@ export function EventUploadForm({ eventId, eventSlug, eventName, coupleNames, we
                 </div>
               </div>
 
-              <Button type="submit" disabled={!guestName.trim()} className="w-full gap-2 rounded-full h-12 text-base" size="lg">
-                Continue to Upload
-                <ArrowRight className="h-4 w-4" />
+              <Button type="submit" disabled={!guestName.trim()} className="h-12 w-full" size="lg">
+                Continue
               </Button>
             </form>
           </div>
         )}
 
         {step === 'upload' && (
-          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="mb-8 text-center">
-              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
-                <ImagePlus className="h-8 w-8 text-primary" />
-              </div>
-              <h1 className="font-serif text-3xl font-semibold">Upload Your Photos</h1>
-              <p className="mt-2 text-muted-foreground">Help us capture every beautiful moment</p>
+          <div>
+            <div className="mb-8 space-y-3 text-center">
+              <h1 className="font-serif text-heading">Upload your photos</h1>
+              <p className="text-sm text-muted-foreground">Everything you add goes straight into the gallery.</p>
             </div>
 
-            <div className="mb-6 flex items-center justify-between rounded-2xl bg-card p-4 ring-1 ring-border/50">
+            <div className="mb-6 flex items-center justify-between rounded-xl border border-border/70 bg-card p-4">
               <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 font-semibold text-primary">
+                <div className="flex size-10 items-center justify-center rounded-full bg-secondary font-medium text-secondary-foreground">
                   {guestName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
                 </div>
                 <div>
@@ -337,15 +317,15 @@ export function EventUploadForm({ eventId, eventSlug, eventName, coupleNames, we
                   {guestTag && <p className="text-xs text-muted-foreground">{guestTag}</p>}
                 </div>
               </div>
-              <button onClick={() => setStep('info')} className="text-sm text-primary hover:underline">Change</button>
+              <button onClick={() => setStep('info')} className="-mr-3 flex min-h-11 items-center px-3 text-sm font-medium text-muted-foreground underline underline-offset-4 hover:text-foreground">Change</button>
             </div>
 
-            <div className="mb-6 rounded-2xl border border-border/50 bg-muted/40 px-4 py-3.5">
-              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-foreground/70">What you can share</p>
+            <div className="mb-6 rounded-xl border border-border/70 bg-muted/40 px-4 py-3.5">
+              <p className="mb-2 text-caption uppercase tracking-[0.09em] text-muted-foreground/80">What you can share</p>
               <ul className="space-y-1.5">
                 <li className="flex items-center gap-2 text-sm"><span className="h-1.5 w-1.5 rounded-full bg-primary" />Photos only — JPEG, PNG, HEIC</li>
-                <li className="flex items-center gap-2 text-sm"><span className="h-1.5 w-1.5 rounded-full bg-primary" />Up to <strong>{MAX_FILES} photos</strong> per upload</li>
-                <li className="flex items-center gap-2 text-sm"><span className="h-1.5 w-1.5 rounded-full bg-primary" />Max <strong>{MAX_IMAGE_SIZE_MB} MB</strong> per photo</li>
+                <li className="flex items-center gap-2 text-sm"><span className="h-1.5 w-1.5 rounded-full bg-primary" />Up to <span className="font-mono">{MAX_FILES}</span> photos per upload</li>
+                <li className="flex items-center gap-2 text-sm"><span className="h-1.5 w-1.5 rounded-full bg-primary" />Max <span className="font-mono">{MAX_IMAGE_SIZE_MB}</span> MB per photo</li>
               </ul>
             </div>
 
@@ -353,10 +333,8 @@ export function EventUploadForm({ eventId, eventSlug, eventName, coupleNames, we
               onDrop={e => { e.preventDefault(); setIsDragging(false); processFiles(Array.from(e.dataTransfer.files)) }}
               onDragOver={e => { e.preventDefault(); setIsDragging(true) }}
               onDragLeave={() => setIsDragging(false)}
-              className={`relative cursor-pointer overflow-hidden rounded-3xl border transition-all duration-300 ${
-                isDragging
-                  ? 'border-primary/60 bg-primary/8 scale-[1.02] shadow-lg'
-                  : 'border-border/60 bg-gradient-to-b from-primary/5 to-background hover:border-primary/40'
+              className={`relative cursor-pointer overflow-hidden rounded-xl border border-dashed transition-colors duration-150 ${
+                isDragging ? 'border-ring bg-secondary/30' : 'border-border bg-card hover:border-ring/50'
               }`}
             >
               <input
@@ -368,14 +346,12 @@ export function EventUploadForm({ eventId, eventSlug, eventName, coupleNames, we
                 className="absolute inset-0 cursor-pointer opacity-0"
                 disabled={isUploading}
               />
-              <div className="flex flex-col items-center justify-center py-16 text-center">
-                <div className={`mb-4 flex h-20 w-20 items-center justify-center rounded-full transition-all ${isDragging ? 'bg-primary/20 scale-110' : 'bg-primary/10'}`}>
-                  <Upload className={`h-10 w-10 ${isDragging ? 'text-primary' : 'text-primary/70'}`} />
-                </div>
-                <h3 className="font-serif text-xl font-semibold">{isDragging ? 'Drop your memories here' : 'Share Your Memories'}</h3>
-                <p className="mt-2 text-sm text-muted-foreground">Drag and drop or tap to select</p>
-                <p className="mt-3 rounded-full bg-muted/60 px-3 py-1 text-xs text-muted-foreground">
-                  Photos only · Up to {MAX_FILES} files · Max {MAX_IMAGE_SIZE_MB}MB each
+              <div className="flex flex-col items-center justify-center px-4 py-16 text-center">
+                <Upload className="mb-4 size-8 text-muted-foreground" />
+                <h3 className="font-serif text-subheading">{isDragging ? 'Drop them in' : 'Add your photos'}</h3>
+                <p className="mt-2 text-sm text-muted-foreground">Drag and drop, or tap to choose</p>
+                <p className="mt-3 font-mono text-[0.6875rem] text-muted-foreground">
+                  {MAX_FILES} photos max · {MAX_IMAGE_SIZE_MB} MB each
                 </p>
               </div>
             </div>
@@ -383,11 +359,8 @@ export function EventUploadForm({ eventId, eventSlug, eventName, coupleNames, we
             {uploads.length > 0 && (
               <div className="mt-8">
                 <div className="mb-4 flex items-center justify-between">
-                  <h3 className="flex items-center gap-2 font-serif text-lg font-semibold">
-                    {allComplete && <Sparkles className="h-5 w-5 text-primary" />}
-                    {allComplete ? 'Upload Complete!' : 'Uploading…'}
-                  </h3>
-                  <span className="rounded-full bg-primary/10 px-3 py-1 text-sm font-medium text-primary">
+                  <h3 className="font-serif text-subheading">{allComplete ? 'All done' : 'Uploading…'}</h3>
+                  <span className="rounded-full bg-muted px-3 py-1 font-mono text-data text-foreground">
                     {completedCount} / {uploads.length}
                   </span>
                 </div>
@@ -406,7 +379,7 @@ export function EventUploadForm({ eventId, eventSlug, eventName, coupleNames, we
 
                 {allComplete && (
                   <div className="mt-8">
-                    <Button onClick={() => setStep('success')} className="w-full rounded-full" size="lg">Continue</Button>
+                    <Button onClick={() => setStep('success')} className="h-12 w-full" size="lg">Continue</Button>
                   </div>
                 )}
               </div>
@@ -431,8 +404,8 @@ function UploadItem({ upload, onRemove }: { upload: UploadStatus; onRemove: () =
   const showProgress = upload.status !== 'complete' && upload.status !== 'error'
 
   return (
-    <div className="flex items-center gap-4 rounded-2xl bg-card p-3 ring-1 ring-border/50">
-      <div className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-xl bg-muted">
+    <div className="flex items-center gap-4 rounded-xl border border-border/70 bg-card p-3">
+      <div className="relative size-14 flex-shrink-0 overflow-hidden rounded-sm bg-muted">
         <img src={upload.preview} alt="" className="h-full w-full object-cover" />
         {upload.status === 'complete' && (
           <div className="absolute inset-0 flex items-center justify-center bg-success/20">
@@ -449,7 +422,11 @@ function UploadItem({ upload, onRemove }: { upload: UploadStatus; onRemove: () =
         {showProgress && <Progress value={upload.progress} className="h-1.5 mt-2" />}
       </div>
       {canRemove && (
-        <button onClick={onRemove} className="flex-shrink-0 rounded-full p-2 text-muted-foreground hover:bg-muted">
+        <button
+          onClick={onRemove}
+          aria-label="Remove photo"
+          className="flex size-11 flex-shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors duration-150 hover:bg-muted hover:text-foreground"
+        >
           <X className="h-4 w-4" />
         </button>
       )}

@@ -1,22 +1,34 @@
 import type { Metadata, Viewport } from 'next'
-import { Cormorant_Garamond, Inter } from 'next/font/google'
+import { Fraunces, JetBrains_Mono } from 'next/font/google'
+import localFont from 'next/font/local'
 import { Analytics } from '@vercel/analytics/next'
-import { ThemeProvider } from 'next-themes'
+import { ThemeProvider } from '@/components/theme-provider'
 import { MediaProvider } from '@/lib/media-context'
 import { Toaster } from 'sonner'
 import { siteConfig } from '@/lib/site-config'
 import './globals.css'
 
-const cormorant = Cormorant_Garamond({ 
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700"],
-  variable: "--font-serif"
-});
+const fraunces = Fraunces({
+  subsets: ['latin'],
+  style: ['normal', 'italic'],
+  axes: ['opsz', 'WONK'],
+  display: 'swap',
+  variable: '--font-serif',
+})
 
-const inter = Inter({ 
-  subsets: ["latin"],
-  variable: "--font-sans"
-});
+const switzer = localFont({
+  src: './fonts/Switzer-Variable.woff2',
+  weight: '300 700',
+  display: 'swap',
+  variable: '--font-sans',
+})
+
+const jetbrainsMono = JetBrains_Mono({
+  weight: ['400', '500'],
+  subsets: ['latin'],
+  variable: '--font-mono',
+  display: 'swap',
+})
 
 export const metadata: Metadata = {
   title: "SnapEvent — Wedding Photo Sharing",
@@ -65,7 +77,7 @@ export const metadata: Metadata = {
 }
 
 export const viewport: Viewport = {
-  themeColor: '#b08040',
+  themeColor: '#f7f2ea',
   width: 'device-width',
   initialScale: 1,
   maximumScale: 1,
@@ -78,9 +90,9 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className={`${cormorant.variable} ${inter.variable}`} suppressHydrationWarning>
+    <html lang="en" className={`${fraunces.variable} ${switzer.variable} ${jetbrainsMono.variable}`} suppressHydrationWarning>
       <body className="font-sans antialiased">
-        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
+        <ThemeProvider>
           <MediaProvider>
             {children}
           </MediaProvider>

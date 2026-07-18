@@ -34,9 +34,10 @@ export default function AccountSettingsPage() {
 
   return (
     <div className="max-w-lg space-y-6">
-      <div>
-        <h1 className="font-serif text-3xl font-semibold">Account settings</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Manage your account and data.</p>
+      <div className="space-y-1.5">
+        <p className="text-caption uppercase tracking-[0.09em] text-muted-foreground/80">Account</p>
+        <h1 className="font-serif text-heading">Settings</h1>
+        <p className="text-body text-muted-foreground">Manage your account and data.</p>
       </div>
 
       <Card className="border-destructive/30">

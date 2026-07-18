@@ -73,11 +73,16 @@ export function EventSettingsForm({
 
   return (
     <div className="max-w-lg space-y-6">
-      <div className="flex items-center gap-3">
-        <Link href={`/dashboard/events/${eventId}`}>
-          <Button variant="ghost" size="icon"><ArrowLeft className="h-4 w-4" /></Button>
-        </Link>
-        <h1 className="font-serif text-2xl font-semibold">Event settings</h1>
+      <div className="space-y-1.5">
+        <div className="flex items-center gap-2">
+          <Link href={`/dashboard/events/${eventId}`}>
+            <Button variant="ghost" size="icon-sm" aria-label="Back to event" className="-ml-2 text-muted-foreground">
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+          </Link>
+          <p className="text-caption uppercase tracking-[0.09em] text-muted-foreground/80">Gallery</p>
+        </div>
+        <h1 className="font-serif text-heading">Event settings</h1>
       </div>
 
       {/* Links */}
@@ -89,7 +94,7 @@ export function EventSettingsForm({
           <div className="space-y-1">
             <Label className="text-xs text-muted-foreground">Guest upload link</Label>
             <div className="flex gap-2">
-              <code className="flex-1 rounded-lg bg-muted px-3 py-2 text-xs truncate">
+              <code className="min-w-0 flex-1 truncate rounded-lg border border-border/60 bg-muted px-3 py-2 font-mono text-xs leading-relaxed text-muted-foreground">
                 {baseUrl}/e/{initialData.slug}
               </code>
               <Button size="sm" variant="outline" onClick={() => { navigator.clipboard.writeText(`${baseUrl}/e/${initialData.slug}`); toast.success('Copied') }}>
@@ -179,39 +184,51 @@ export function EventSettingsForm({
               value={newPin}
               onChange={e => setNewPin(e.target.value.replace(/\D/g, ''))}
               placeholder="4–6 digit PIN"
+              className="font-mono text-data tracking-[0.2em]"
             />
           </div>
         </CardContent>
       </Card>
 
-      <div className="flex items-center justify-between pt-2">
-        <AlertDialog>
-          <AlertDialogTrigger asChild>
-            <Button variant="ghost" size="sm" className="text-destructive gap-2">
-              <Trash2 className="h-3.5 w-3.5" />
-              Delete event
-            </Button>
-          </AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Delete this event?</AlertDialogTitle>
-              <AlertDialogDescription>
-                All photos and guest data for this event will be permanently deleted. This cannot be undone.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction
-                className="bg-destructive text-destructive-foreground"
-                onClick={() => startTransition(async () => { await deleteEvent(eventId) })}
-              >
+      <Card className="border-destructive/30">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base text-destructive">
+            <Trash2 className="h-4 w-4" />
+            Danger zone
+          </CardTitle>
+          <CardDescription>Deleting this event removes all photos and guest data permanently.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="destructive" size="sm" className="gap-2">
+                <Trash2 className="h-3.5 w-3.5" />
                 Delete event
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete this event?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  All photos and guest data for this event will be permanently deleted. This cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  className="bg-destructive text-destructive-foreground"
+                  onClick={() => startTransition(async () => { await deleteEvent(eventId) })}
+                >
+                  Delete event
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </CardContent>
+      </Card>
 
-        <Button onClick={() => save()} disabled={isPending} className="rounded-full gap-2">
+      <div className="flex justify-end pt-2">
+        <Button onClick={() => save()} disabled={isPending} className="gap-2">
           {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Save changes'}
         </Button>
       </div>

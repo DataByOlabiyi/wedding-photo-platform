@@ -29,16 +29,17 @@ export default function NewEventPage() {
 
   return (
     <div className="max-w-lg space-y-8">
-      <div className="flex items-center gap-3">
-        <Link href="/dashboard">
-          <Button variant="ghost" size="icon">
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-        </Link>
-        <div>
-          <h1 className="font-serif text-2xl font-semibold">New event</h1>
-          <p className="text-sm text-muted-foreground">Create a new wedding gallery for your guests.</p>
+      <div className="space-y-1.5">
+        <div className="flex items-center gap-2">
+          <Link href="/dashboard">
+            <Button variant="ghost" size="icon-sm" aria-label="Back to dashboard" className="-ml-2 text-muted-foreground">
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+          </Link>
+          <p className="text-caption uppercase tracking-[0.09em] text-muted-foreground/80">Events</p>
         </div>
+        <h1 className="font-serif text-heading">New event</h1>
+        <p className="text-body text-muted-foreground">Create a new wedding gallery for your guests.</p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-5">
@@ -58,7 +59,7 @@ export default function NewEventPage() {
 
         {error && <p className="text-sm text-destructive">{error}</p>}
 
-        <Button type="submit" className="w-full rounded-full" disabled={isPending}>
+        <Button type="submit" className="w-full" disabled={isPending}>
           {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Create event'}
         </Button>
       </form>

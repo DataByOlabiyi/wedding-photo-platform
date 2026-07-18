@@ -8,22 +8,21 @@ export default function PrivacyPage() {
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-50 border-b border-border/40 bg-background/95 backdrop-blur">
         <div className="container mx-auto flex h-16 items-center px-4">
-          <Link href="/" className="flex items-center gap-2 text-foreground">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10">
-              <Camera className="h-4 w-4 text-primary" />
-            </div>
-            <span className="font-semibold">SnapEvent</span>
+          <Link href="/" className="inline-flex items-center gap-2">
+            <Camera className="size-4 text-muted-foreground" />
+            <span className="font-serif text-xl tracking-tight">SnapEvent</span>
           </Link>
         </div>
       </header>
       <div className="container mx-auto max-w-3xl px-4 py-16">
-        <h1 className="font-serif text-4xl font-semibold mb-2">Privacy Policy</h1>
-        <p className="text-sm text-muted-foreground mb-12">Last updated: June 2026</p>
+        <p className="text-caption uppercase tracking-[0.09em] text-muted-foreground/80">Legal</p>
+        <h1 className="mt-3 mb-2 font-serif text-heading">Privacy Policy</h1>
+        <p className="mb-12 font-mono text-data text-muted-foreground">Last updated: June 2026</p>
 
         <div className="prose prose-sm dark:prose-invert max-w-none space-y-8">
 
           <section>
-            <h2 className="font-serif text-xl font-semibold mb-3">1. What We Collect</h2>
+            <h2 className="font-serif text-subheading mb-3">1. What We Collect</h2>
             <p className="text-muted-foreground leading-relaxed">
               We collect the following information when you use the Service:
             </p>
@@ -36,7 +35,7 @@ export default function PrivacyPage() {
           </section>
 
           <section>
-            <h2 className="font-serif text-xl font-semibold mb-3">2. How We Use It</h2>
+            <h2 className="font-serif text-subheading mb-3">2. How We Use It</h2>
             <p className="text-muted-foreground leading-relaxed">
               We use the information we collect to operate and improve the Service; to send
               transactional emails such as account confirmation and password resets; to enforce
@@ -46,7 +45,7 @@ export default function PrivacyPage() {
           </section>
 
           <section>
-            <h2 className="font-serif text-xl font-semibold mb-3">3. Storage and Processors</h2>
+            <h2 className="font-serif text-subheading mb-3">3. Storage and Processors</h2>
             <p className="text-muted-foreground leading-relaxed">
               Your data is stored and processed by the following third-party sub-processors:
             </p>
@@ -66,7 +65,7 @@ export default function PrivacyPage() {
           </section>
 
           <section>
-            <h2 className="font-serif text-xl font-semibold mb-3">4. Guest Photos</h2>
+            <h2 className="font-serif text-subheading mb-3">4. Guest Photos</h2>
             <p className="text-muted-foreground leading-relaxed">
               Photos uploaded by guests are stored on behalf of the event organiser (Couple).
               The Couple is the data controller for their event&apos;s photos; we act as a
@@ -82,7 +81,7 @@ export default function PrivacyPage() {
           </section>
 
           <section>
-            <h2 className="font-serif text-xl font-semibold mb-3">5. EXIF Data</h2>
+            <h2 className="font-serif text-subheading mb-3">5. EXIF Data</h2>
             <p className="text-muted-foreground leading-relaxed">
               Photos are automatically stripped of EXIF metadata — including GPS location,
               device model, and timestamp — before being stored. We do not retain or expose
@@ -91,7 +90,7 @@ export default function PrivacyPage() {
           </section>
 
           <section>
-            <h2 className="font-serif text-xl font-semibold mb-3">6. Data Retention</h2>
+            <h2 className="font-serif text-subheading mb-3">6. Data Retention</h2>
             <p className="text-muted-foreground leading-relaxed">
               Event data and photos are retained until the account holder deletes the event or
               deletes their account. Deleting an account permanently removes all associated
@@ -101,7 +100,7 @@ export default function PrivacyPage() {
           </section>
 
           <section>
-            <h2 className="font-serif text-xl font-semibold mb-3">7. Your Rights</h2>
+            <h2 className="font-serif text-subheading mb-3">7. Your Rights</h2>
             <p className="text-muted-foreground leading-relaxed">
               You may request access to, correction of, or deletion of your personal data at
               any time by contacting us at{' '}
@@ -115,7 +114,7 @@ export default function PrivacyPage() {
           </section>
 
           <section>
-            <h2 className="font-serif text-xl font-semibold mb-3">8. Cookies</h2>
+            <h2 className="font-serif text-subheading mb-3">8. Cookies</h2>
             <p className="text-muted-foreground leading-relaxed">
               We use essential session cookies only — set by Supabase Auth to maintain your
               login session. We do not use advertising cookies, third-party tracking pixels,
@@ -124,7 +123,7 @@ export default function PrivacyPage() {
           </section>
 
           <section>
-            <h2 className="font-serif text-xl font-semibold mb-3">9. Children</h2>
+            <h2 className="font-serif text-subheading mb-3">9. Children</h2>
             <p className="text-muted-foreground leading-relaxed">
               This Service is not directed at children under the age of 13, and we do not
               knowingly collect personal data from children. Photos of minors may appear in
@@ -135,7 +134,7 @@ export default function PrivacyPage() {
           </section>
 
           <section>
-            <h2 className="font-serif text-xl font-semibold mb-3">10. Contact</h2>
+            <h2 className="font-serif text-subheading mb-3">10. Contact</h2>
             <p className="text-muted-foreground leading-relaxed">
               Privacy questions or data requests:{' '}
               <a href="mailto:usework.it@gmail.com" className="underline underline-offset-4">

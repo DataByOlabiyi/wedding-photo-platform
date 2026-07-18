@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Heart, Loader2 } from 'lucide-react'
+import { Loader2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -53,14 +53,12 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background px-4">
+    <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="w-full max-w-sm space-y-8">
-        <div className="text-center space-y-2">
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-            <Heart className="h-6 w-6 text-primary" />
-          </div>
-          <h1 className="font-serif text-2xl font-semibold">Create your account</h1>
-          <p className="text-sm text-muted-foreground">Set up your wedding photo platform</p>
+        <div className="space-y-3 text-center">
+          <p className="text-caption uppercase tracking-[0.09em] text-muted-foreground/80">SnapEvent</p>
+          <h1 className="font-serif text-heading">Create your account</h1>
+          <p className="text-sm text-muted-foreground">Your first gallery is a minute away.</p>
         </div>
 
         <form onSubmit={handleSignup} className="space-y-4">
@@ -104,7 +102,7 @@ export default function SignupPage() {
               <Link href="/legal/privacy" className="text-primary underline underline-offset-4">Privacy Policy</Link>
             </label>
           </div>
-          <Button type="submit" className="w-full rounded-full" disabled={loading}>
+          <Button type="submit" className="h-11 w-full" disabled={loading}>
             {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Create account'}
           </Button>
         </form>

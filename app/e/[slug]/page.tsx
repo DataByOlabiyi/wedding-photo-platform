@@ -28,11 +28,12 @@ export default async function EventUploadPage({ params }: Props) {
 
   if (isClosed) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background px-4">
-        <div className="text-center space-y-3 max-w-sm">
-          <h1 className="font-serif text-2xl font-semibold">Uploads closed</h1>
-          <p className="text-muted-foreground text-sm">
-            The photo upload window for this event has ended. Thank you for being part of the celebration!
+      <div className="flex min-h-screen items-center justify-center bg-background px-4">
+        <div className="max-w-sm space-y-3 text-center">
+          <p className="text-caption uppercase tracking-[0.09em] text-muted-foreground/80">{event.name}</p>
+          <h1 className="font-serif text-heading">Uploads have closed</h1>
+          <p className="text-sm text-muted-foreground">
+            The photo window for this event has ended. Thank you for helping tell the story.
           </p>
         </div>
       </div>

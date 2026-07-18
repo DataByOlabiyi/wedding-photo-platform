@@ -8,22 +8,21 @@ export default function TermsPage() {
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-50 border-b border-border/40 bg-background/95 backdrop-blur">
         <div className="container mx-auto flex h-16 items-center px-4">
-          <Link href="/" className="flex items-center gap-2 text-foreground">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10">
-              <Camera className="h-4 w-4 text-primary" />
-            </div>
-            <span className="font-semibold">SnapEvent</span>
+          <Link href="/" className="inline-flex items-center gap-2">
+            <Camera className="size-4 text-muted-foreground" />
+            <span className="font-serif text-xl tracking-tight">SnapEvent</span>
           </Link>
         </div>
       </header>
       <div className="container mx-auto max-w-3xl px-4 py-16">
-        <h1 className="font-serif text-4xl font-semibold mb-2">Terms of Service</h1>
-        <p className="text-sm text-muted-foreground mb-12">Last updated: June 2026</p>
+        <p className="text-caption uppercase tracking-[0.09em] text-muted-foreground/80">Legal</p>
+        <h1 className="mt-3 mb-2 font-serif text-heading">Terms of Service</h1>
+        <p className="mb-12 font-mono text-data text-muted-foreground">Last updated: June 2026</p>
 
         <div className="prose prose-sm dark:prose-invert max-w-none space-y-8">
 
           <section>
-            <h2 className="font-serif text-xl font-semibold mb-3">1. Acceptance of Terms</h2>
+            <h2 className="font-serif text-subheading mb-3">1. Acceptance of Terms</h2>
             <p className="text-muted-foreground leading-relaxed">
               By creating an account, uploading photos, or otherwise accessing SnapEvent
               (the &ldquo;Service&rdquo;), you agree to be bound by these Terms of Service. If you do
@@ -32,7 +31,7 @@ export default function TermsPage() {
           </section>
 
           <section>
-            <h2 className="font-serif text-xl font-semibold mb-3">2. Description of Service</h2>
+            <h2 className="font-serif text-subheading mb-3">2. Description of Service</h2>
             <p className="text-muted-foreground leading-relaxed">
               SnapEvent is a photo-sharing platform designed for weddings and private events.
               Couples (account holders) create events and share an upload link with guests.
@@ -42,7 +41,7 @@ export default function TermsPage() {
           </section>
 
           <section>
-            <h2 className="font-serif text-xl font-semibold mb-3">3. Account Responsibilities</h2>
+            <h2 className="font-serif text-subheading mb-3">3. Account Responsibilities</h2>
             <p className="text-muted-foreground leading-relaxed">
               You are responsible for keeping your login credentials confidential. All activity
               that occurs under your account is your responsibility. You must notify us
@@ -52,7 +51,7 @@ export default function TermsPage() {
           </section>
 
           <section>
-            <h2 className="font-serif text-xl font-semibold mb-3">4. Acceptable Use</h2>
+            <h2 className="font-serif text-subheading mb-3">4. Acceptable Use</h2>
             <p className="text-muted-foreground leading-relaxed">
               You agree not to upload, share, or transmit content that: (a) is illegal or
               violates any applicable law; (b) infringes the intellectual property or privacy
@@ -64,7 +63,7 @@ export default function TermsPage() {
           </section>
 
           <section>
-            <h2 className="font-serif text-xl font-semibold mb-3">5. Guest Uploads</h2>
+            <h2 className="font-serif text-subheading mb-3">5. Guest Uploads</h2>
             <p className="text-muted-foreground leading-relaxed">
               By uploading a photo to an event, a guest grants the event organiser (Couple) a
               non-exclusive, royalty-free licence to view and download that photo for personal
@@ -76,7 +75,7 @@ export default function TermsPage() {
           </section>
 
           <section>
-            <h2 className="font-serif text-xl font-semibold mb-3">6. Data and Privacy</h2>
+            <h2 className="font-serif text-subheading mb-3">6. Data and Privacy</h2>
             <p className="text-muted-foreground leading-relaxed">
               Our collection and use of personal data is described in our{' '}
               <Link href="/legal/privacy" className="underline underline-offset-4">
@@ -88,7 +87,7 @@ export default function TermsPage() {
           </section>
 
           <section>
-            <h2 className="font-serif text-xl font-semibold mb-3">7. Termination</h2>
+            <h2 className="font-serif text-subheading mb-3">7. Termination</h2>
             <p className="text-muted-foreground leading-relaxed">
               We may suspend or permanently terminate your account if you violate these terms
               or if we are required to do so by law. You may delete your account at any time
@@ -98,7 +97,7 @@ export default function TermsPage() {
           </section>
 
           <section>
-            <h2 className="font-serif text-xl font-semibold mb-3">8. Limitation of Liability</h2>
+            <h2 className="font-serif text-subheading mb-3">8. Limitation of Liability</h2>
             <p className="text-muted-foreground leading-relaxed">
               The Service is provided &ldquo;as is&rdquo; without warranties of any kind. SnapEvent
               shall not be liable for any indirect, incidental, or consequential damages arising
@@ -109,7 +108,7 @@ export default function TermsPage() {
           </section>
 
           <section>
-            <h2 className="font-serif text-xl font-semibold mb-3">9. Contact</h2>
+            <h2 className="font-serif text-subheading mb-3">9. Contact</h2>
             <p className="text-muted-foreground leading-relaxed">
               Questions about these Terms? Email us at{' '}
               <a href="mailto:usework.it@gmail.com" className="underline underline-offset-4">

@@ -2,6 +2,7 @@ import { requireOrg } from '@/lib/auth'
 import Link from 'next/link'
 import { Heart, LayoutDashboard, LogOut, PlusCircle, Settings } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { ThemeToggle } from '@/components/theme-toggle'
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { membership } = await requireOrg()
@@ -15,24 +16,24 @@ export default async function DashboardLayout({ children }: { children: React.Re
         <div className="container mx-auto flex h-16 items-center justify-between px-4">
           <div className="flex items-center gap-6">
             <Link href="/dashboard" className="flex items-center gap-2">
-              <Heart className="h-5 w-5 text-primary" fill="currentColor" />
-              <span className="font-serif text-lg font-semibold">{org?.name ?? 'Dashboard'}</span>
+              <Heart className="h-4 w-4 text-primary" fill="currentColor" />
+              <span className="text-sm font-semibold tracking-[0.01em]">{org?.name ?? 'Dashboard'}</span>
             </Link>
             <nav className="hidden gap-1 sm:flex">
               <Link href="/dashboard">
-                <Button variant="ghost" size="sm" className="gap-2">
+                <Button variant="ghost" size="sm" className="gap-2 text-muted-foreground">
                   <LayoutDashboard className="h-4 w-4" />
                   Events
                 </Button>
               </Link>
               <Link href="/dashboard/events/new">
-                <Button variant="ghost" size="sm" className="gap-2">
+                <Button variant="ghost" size="sm" className="gap-2 text-muted-foreground">
                   <PlusCircle className="h-4 w-4" />
                   New event
                 </Button>
               </Link>
               <Link href="/dashboard/settings">
-                <Button variant="ghost" size="sm" className="gap-2">
+                <Button variant="ghost" size="sm" className="gap-2 text-muted-foreground">
                   <Settings className="h-4 w-4" />
                   Settings
                 </Button>
@@ -43,13 +44,14 @@ export default async function DashboardLayout({ children }: { children: React.Re
           <div className="flex items-center gap-2">
             {org?.plan === 'starter' && (
               <Link href="/dashboard/billing">
-                <Button variant="outline" size="sm" className="hidden sm:flex gap-1 text-xs">
+                <Button variant="outline" size="sm" className="hidden sm:inline-flex">
                   Upgrade to Pro
                 </Button>
               </Link>
             )}
+            <ThemeToggle />
             <form action="/api/admin/logout" method="POST">
-              <Button variant="ghost" size="icon" type="submit" title="Sign out">
+              <Button variant="ghost" size="icon-sm" type="submit" title="Sign out" aria-label="Sign out">
                 <LogOut className="h-4 w-4" />
               </Button>
             </form>
@@ -57,7 +59,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
         </div>
       </header>
 
-      <main className="container mx-auto max-w-5xl px-4 py-8">
+      <main className="container mx-auto max-w-6xl px-4 py-8">
         {children}
       </main>
     </div>

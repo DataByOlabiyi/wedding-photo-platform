@@ -24,7 +24,7 @@ export function ManageSubscriptionButton() {
   }
 
   return (
-    <Button variant="outline" onClick={handleManage} disabled={loading} className="w-full gap-2 rounded-full">
+    <Button variant="outline" onClick={handleManage} disabled={loading} className="w-full gap-2">
       {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <CreditCard className="h-4 w-4" />}
       Manage subscription
     </Button>
