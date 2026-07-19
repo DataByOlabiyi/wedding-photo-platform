@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { Mail } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { SiteHeader } from '@/components/site-header'
 
 export const metadata = { title: 'Support' }
 
@@ -35,6 +36,7 @@ const faqs = [
 export default function SupportPage() {
   return (
     <div className="min-h-screen bg-background">
+      <SiteHeader />
       <div className="container mx-auto max-w-2xl px-4 py-16 space-y-10">
 
         <div className="space-y-3 text-center">

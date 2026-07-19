@@ -1,19 +1,12 @@
 import Link from 'next/link'
-import { Camera } from 'lucide-react'
+import { SiteHeader } from '@/components/site-header'
 
 export const metadata = { title: 'Privacy Policy' }
 
 export default function PrivacyPage() {
   return (
     <div className="min-h-screen bg-background">
-      <header className="sticky top-0 z-50 border-b border-border/40 bg-background/95 backdrop-blur">
-        <div className="container mx-auto flex h-16 items-center px-4">
-          <Link href="/" className="inline-flex items-center gap-2">
-            <Camera className="size-4 text-muted-foreground" />
-            <span className="font-serif text-xl tracking-tight">SnapEvent</span>
-          </Link>
-        </div>
-      </header>
+      <SiteHeader />
       <div className="container mx-auto max-w-3xl px-4 py-16">
         <p className="text-caption uppercase tracking-[0.09em] text-muted-foreground/80">Legal</p>
         <h1 className="mt-3 mb-2 font-serif text-heading">Privacy Policy</h1>

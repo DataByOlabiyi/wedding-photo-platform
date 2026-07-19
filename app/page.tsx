@@ -4,8 +4,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Reveal } from "@/components/reveal"
 import { SiteFooter } from "@/components/site-footer"
+import { SiteHeader } from "@/components/site-header"
 import { PLAN_LIMITS } from "@/lib/plan-limits"
-import { Camera, Check, ChevronDown } from "lucide-react"
+import { Check, ChevronDown } from "lucide-react"
 
 const HOW_IT_WORKS = [
   {
@@ -72,18 +73,7 @@ const FAQS = [
 export default function HomePage() {
   return (
     <div className="flex min-h-screen flex-col bg-background">
-      <header className="sticky top-0 z-50 w-full border-b border-border/60 bg-background/90 backdrop-blur">
-        <div className="container mx-auto flex h-16 items-center justify-between px-4">
-          <Link href="/" className="inline-flex items-center gap-2">
-            <Camera className="size-4 text-muted-foreground" />
-            <span className="font-serif text-xl tracking-tight">SnapEvent</span>
-          </Link>
-          <div className="flex items-center gap-2">
-            <Link href="/auth/login"><Button variant="ghost" size="sm">Log in</Button></Link>
-            <Link href="/auth/signup"><Button size="sm">Get started</Button></Link>
-          </div>
-        </div>
-      </header>
+      <SiteHeader />
 
       <section className="px-4 py-16 sm:py-24">
         <div className="mx-auto max-w-3xl text-center">

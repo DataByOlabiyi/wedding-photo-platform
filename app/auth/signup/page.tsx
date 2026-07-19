@@ -53,8 +53,7 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <div className="w-full max-w-sm space-y-8">
+    <div className="w-full max-w-sm space-y-8">
         <div className="space-y-3 text-center">
           <p className="text-caption uppercase tracking-[0.09em] text-muted-foreground/80">SnapEvent</p>
           <h1 className="font-serif text-heading">Create your account</h1>
@@ -113,7 +112,6 @@ export default function SignupPage() {
             Sign in
           </Link>
         </p>
-      </div>
     </div>
   )
 }

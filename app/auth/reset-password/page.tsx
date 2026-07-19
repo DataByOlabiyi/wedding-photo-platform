@@ -53,15 +53,14 @@ export default function ResetPasswordPage() {
 
   if (!ready) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="flex items-center justify-center py-24">
         <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
       </div>
     )
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <div className="w-full max-w-sm space-y-8">
+    <div className="w-full max-w-sm space-y-8">
         <div className="space-y-3 text-center">
           <p className="text-caption uppercase tracking-[0.09em] text-muted-foreground/80">SnapEvent</p>
           <h1 className="font-serif text-heading">Set a new password</h1>
@@ -98,7 +97,6 @@ export default function ResetPasswordPage() {
             {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Update password'}
           </Button>
         </form>
-      </div>
     </div>
   )
 }

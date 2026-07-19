@@ -35,8 +35,7 @@ export default function ForgotPasswordPage() {
 
   if (sent) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background px-4">
-        <div className="w-full max-w-sm space-y-8">
+      <div className="w-full max-w-sm space-y-8">
           <div className="space-y-3 text-center">
             <p className="text-caption uppercase tracking-[0.09em] text-muted-foreground/80">SnapEvent</p>
             <h1 className="font-serif text-heading">Check your email</h1>
@@ -52,13 +51,11 @@ export default function ForgotPasswordPage() {
             </Link>
           </div>
         </div>
-      </div>
     )
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <div className="w-full max-w-sm space-y-8">
+    <div className="w-full max-w-sm space-y-8">
         <div className="space-y-3 text-center">
           <p className="text-caption uppercase tracking-[0.09em] text-muted-foreground/80">SnapEvent</p>
           <h1 className="font-serif text-heading">Reset your password</h1>
@@ -89,7 +86,6 @@ export default function ForgotPasswordPage() {
             Back to sign in
           </Link>
         </p>
-      </div>
     </div>
   )
 }
