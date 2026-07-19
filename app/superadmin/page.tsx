@@ -1,20 +1,24 @@
-import { requireSuperAdmin } from '@/lib/auth'
+import { requirePlatformAdmin } from '@/lib/auth'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { Shield, Users, Image as ImageIcon, Zap } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { PlanOverrideForm } from './plan-override-form'
 import { EventSearchInput } from './event-search-input'
+import { GrantAdminForm } from './grant-admin-form'
+import { RevokeAdminButton } from './revoke-admin-button'
+import type { PlatformAdminRole } from '@/lib/types'
 
 export default async function SuperAdminPage({
   searchParams,
 }: {
   searchParams: Promise<{ q?: string }>
 }) {
-  await requireSuperAdmin()
+  const { role } = await requirePlatformAdmin()
 
   const { q: rawQ } = await searchParams
-  const q = rawQ ? rawQ.replace(/[%_]/g, '\\$&').trim() : ''
+  // Strip PostgREST .or() logic metacharacters so q cannot inject filter clauses.
+  const q = rawQ ? rawQ.replace(/[%_]/g, '\\$&').replace(/[(),]/g, '').trim() : ''
 
   const db = createAdminClient()
 
@@ -40,13 +44,37 @@ export default async function SuperAdminPage({
 
   const proCount = (orgs ?? []).filter(o => o.plan === 'pro').length
 
+  type StaffRow = { user_id: string; role: PlatformAdminRole; created_at: string; email: string }
+  let staff: StaffRow[] = []
+  if (role === 'superadmin') {
+    const { data: admins } = await db
+      .from('platform_admins')
+      .select('user_id, role, created_at')
+      .order('created_at', { ascending: true })
+    staff = await Promise.all(
+      (admins ?? []).map(async (row): Promise<StaffRow> => {
+        const { data } = await db.auth.admin.getUserById(row.user_id)
+        return {
+          user_id: row.user_id,
+          role: row.role as PlatformAdminRole,
+          created_at: row.created_at,
+          email: data?.user?.email ?? row.user_id,
+        }
+      })
+    )
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b border-border/40 bg-background/95 backdrop-blur sticky top-0 z-40">
         <div className="container mx-auto flex h-16 items-center gap-3 px-4">
-          <Shield className="h-4 w-4 text-destructive" />
+          <Shield className={`h-4 w-4 ${role === 'superadmin' ? 'text-destructive' : 'text-muted-foreground'}`} />
           <h1 className="text-sm font-semibold tracking-[0.01em]">Platform Admin</h1>
-          <Badge variant="destructive">Superadmin</Badge>
+          {role === 'superadmin' ? (
+            <Badge variant="destructive">Superadmin</Badge>
+          ) : (
+            <Badge variant="outline">Admin</Badge>
+          )}
         </div>
       </header>
 
@@ -89,7 +117,9 @@ export default async function SuperAdminPage({
                     <Badge variant={org.plan === 'pro' ? 'default' : 'secondary'}>
                       {org.plan}
                     </Badge>
-                    <PlanOverrideForm orgId={org.id} currentPlan={org.plan as 'starter' | 'pro'} />
+                    {role === 'superadmin' && (
+                      <PlanOverrideForm orgId={org.id} currentPlan={org.plan as 'starter' | 'pro'} />
+                    )}
                   </div>
                 </div>
               ))}
@@ -165,6 +195,46 @@ export default async function SuperAdminPage({
             )}
           </CardContent>
         </Card>
+
+        {role === 'superadmin' && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Platform staff</CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              <div className="divide-y divide-border">
+                {staff.map(member => (
+                  <div key={member.user_id} className="flex items-center justify-between gap-4 px-6 py-4">
+                    <div className="min-w-0">
+                      <p className="font-mono text-sm truncate">{member.email}</p>
+                      <p className="font-mono text-xs text-muted-foreground">
+                        Granted {new Date(member.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-3 shrink-0">
+                      <Badge variant={member.role === 'superadmin' ? 'destructive' : 'outline'}>
+                        {member.role === 'superadmin' ? 'Superadmin' : 'Admin'}
+                      </Badge>
+                      {member.role === 'admin' ? (
+                        <RevokeAdminButton userId={member.user_id} />
+                      ) : (
+                        <span className="font-mono text-xs text-muted-foreground" aria-hidden>—</span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+
+                {!staff.some(member => member.role === 'admin') && (
+                  <div className="px-6 py-8 text-center text-sm text-muted-foreground">No admins granted yet.</div>
+                )}
+              </div>
+              <div className="border-t border-border px-6 py-4 space-y-2">
+                <GrantAdminForm />
+                <p className="text-xs text-muted-foreground">Grants read-only access. The account must already have signed up.</p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </main>
     </div>
   )

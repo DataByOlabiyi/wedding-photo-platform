@@ -71,7 +71,7 @@ Never add a new server action or API route that writes to or reads from `events`
 
 ### Migrations
 - SQL migrations are numbered `NNN_description.sql` in `scripts/`
-- **The 007 prefix is duplicated** (`007_add_events_table.sql` and `007_soft_delete_and_rls.sql`) — the next migration must start at `016_`
+- **The 007 prefix is duplicated** (`007_add_events_table.sql` and `007_soft_delete_and_rls.sql`) — the next migration must start at `022_`
 - Never rename or renumber existing migrations — they represent applied history
 - Every new migration must be safe to run on the existing schema (idempotent where possible)
 
@@ -98,7 +98,7 @@ Never add a new server action or API route that writes to or reads from `events`
 | Storage quotas | Not enforced at all — an org can upload unlimited data | Noted in README as a known gap |
 | `proxy.ts` auth middleware | Runs in Node.js runtime, not at the edge — session refresh on every request is slower than true Next.js middleware | Low urgency but worth revisiting |
 | Audit logs | Deletion action succeeds even if audit log insertion fails (fire-and-forget `.then(() => {}, () => {})`) | Compliance gap |
-| Migration 007 duplicate | Two files share the `007_` prefix — running both against a fresh DB could conflict | Next migration starts at 016 |
+| Migration 007 duplicate | Two files share the `007_` prefix — running both against a fresh DB could conflict | Next migration starts at 022 |
 | Supabase service role key | README notes it was previously exposed and needs rotation | Verify this was done before scaling |
 | Storage bucket RLS | No bucket-level RLS in Supabase Storage — all access control is application-level | Defense is entirely in server actions |
 
@@ -113,7 +113,7 @@ A change is done when all of the following are true:
 - [ ] The cross-tenant invariant is preserved: no query can return data from a different org than the authenticated user's org
 - [ ] No new `any` types introduced without a justified comment
 - [ ] No new server action or API route bypasses the `requireOrg()` + org scoping pattern
-- [ ] If a new SQL migration was added: it is numbered `016_` or higher, it is safe to run on the existing schema, and it has been manually verified against the Supabase dashboard
+- [ ] If a new SQL migration was added: it is numbered `022_` or higher, it is safe to run on the existing schema, and it has been manually verified against the Supabase dashboard
 - [ ] If Stripe is touched: webhook events for the affected flow have been manually verified in Stripe's test dashboard
 - [ ] The change has been reviewed by the Reviewer agent against this file
 

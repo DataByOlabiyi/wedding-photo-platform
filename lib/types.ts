@@ -39,6 +39,8 @@ export type UploadQueueItem = {
   error?: string
 }
 
+export type PlatformAdminRole = 'admin' | 'superadmin'
+
 export type RSVPStatus = 'pending' | 'accepted' | 'declined'
 
 export interface Guest {

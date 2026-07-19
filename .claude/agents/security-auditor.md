@@ -41,8 +41,9 @@ You are the security auditor for a multi-tenant wedding photo SaaS platform. You
 - [ ] No price ID or plan tier is accepted from client-side request params
 
 ### Admin and role escalation
-- [ ] Superadmin routes check `is_superadmin` from the session/DB — not from a header or query param
-- [ ] `is_superadmin` flag cannot be set by a regular org member action
+- [ ] Platform staff routes are guarded by `requirePlatformAdmin()` / `requireSuperAdmin()` reading the `platform_admins` table (deny-all RLS, service-role access only) — never a header, query param, or JWT metadata
+- [ ] No `platform_admins` row can be created by a regular org member action; the in-app grant path (`grantPlatformAdmin`) can only ever insert role `admin`, never `superadmin`
+- [ ] Every mutating action under `/superadmin` starts with a superadmin guard; admin tier is read-only
 - [ ] Org owner vs member distinction is enforced for destructive actions (delete event, delete account)
 
 ### Rate limiting and brute-force

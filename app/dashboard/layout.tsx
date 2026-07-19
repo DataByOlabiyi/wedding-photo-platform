@@ -1,11 +1,12 @@
-import { requireOrg } from '@/lib/auth'
+import { requireOrg, getPlatformAdminRole } from '@/lib/auth'
 import Link from 'next/link'
-import { Heart, LayoutDashboard, LogOut, PlusCircle, Settings } from 'lucide-react'
+import { Heart, LayoutDashboard, LogOut, PlusCircle, Settings, Shield } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ThemeToggle } from '@/components/theme-toggle'
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const { membership } = await requireOrg()
+  const { user, membership } = await requireOrg()
+  const staffRole = await getPlatformAdminRole(user.id)
   const org = Array.isArray(membership.organizations)
     ? membership.organizations[0]
     : membership.organizations as { name: string; plan: string } | null
@@ -48,6 +49,21 @@ export default async function DashboardLayout({ children }: { children: React.Re
                   Upgrade to Pro
                 </Button>
               </Link>
+            )}
+            {staffRole && (
+              <>
+                <Link href="/superadmin">
+                  <Button variant="ghost" size="sm" className="hidden sm:inline-flex gap-2 text-muted-foreground">
+                    <Shield className="h-4 w-4" />
+                    Platform admin
+                  </Button>
+                </Link>
+                <Link href="/superadmin">
+                  <Button variant="ghost" size="icon-sm" className="sm:hidden text-muted-foreground" title="Platform admin" aria-label="Platform admin">
+                    <Shield className="h-4 w-4" />
+                  </Button>
+                </Link>
+              </>
             )}
             <ThemeToggle />
             <form action="/api/admin/logout" method="POST">

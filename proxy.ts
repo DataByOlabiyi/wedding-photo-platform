@@ -41,9 +41,10 @@ export async function proxy(request: NextRequest) {
     return response
   }
 
-  // Superadmin: requires session + is_superadmin in app_metadata (server-only, not user-writable)
+  // Superadmin: session check only — role enforcement lives in
+  // app/superadmin/layout.tsx (requirePlatformAdmin → platform_admins table).
   if (pathname.startsWith('/superadmin')) {
-    if (!user || user.app_metadata?.is_superadmin !== true) {
+    if (!user) {
       return NextResponse.redirect(new URL('/auth/login', request.url))
     }
     return response

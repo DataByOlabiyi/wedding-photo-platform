@@ -16,7 +16,7 @@ Platform Admin (superadmin)
 
 | Role | Auth | What they can do |
 |------|------|-----------------|
-| Admin | Supabase Auth + `is_superadmin` flag | Platform-wide stats, override org plans |
+| Admin | Supabase Auth + `platform_admins` table (admin / superadmin tiers) | Platform-wide stats, override org plans |
 | Couple | Supabase Auth (email + password) | Create events, view/delete photos, download ZIP, manage settings |
 | Guest | None (no account) | Upload photos to an event via a shared link |
 
@@ -172,7 +172,8 @@ Open [http://localhost:3000](http://localhost:3000).
 ### Authentication
 - Couples authenticate via Supabase Auth (email + password, email confirmation required)
 - Session cookies are `httpOnly`, `secure` in production, managed by `@supabase/ssr`
-- Superadmin status is set via `app_metadata.is_superadmin` — not writable by users
+- Platform staff roles live in the `platform_admins` table (service-role access only); superadmin manages grants from `/superadmin`
+- Platform staff accounts should enable MFA in Supabase Auth before operational use
 - Guests have no accounts; they are identified by a `guest_token` (UUID) stored in `localStorage`
 
 ### Tenant isolation

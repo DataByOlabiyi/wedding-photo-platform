@@ -115,6 +115,18 @@ export const confirmUploadSchema = z.object({
 
 export type ConfirmUploadInput = z.infer<typeof confirmUploadSchema>
 
+// Superadmin staff-grant email input
+export const platformAdminEmailSchema = z.object({
+  email: z
+    .string()
+    .trim()
+    .min(1, 'Email is required')
+    .max(254, 'Email too long')
+    .email('Enter a valid email'),
+})
+
+export type PlatformAdminEmailInput = z.infer<typeof platformAdminEmailSchema>
+
 // Validate admin login password
 export function validateAdminPassword(password: string): { valid: boolean; error?: string } {
   try {

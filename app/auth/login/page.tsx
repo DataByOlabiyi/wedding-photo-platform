@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Loader2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import { resolvePostLoginRedirect } from '@/app/actions/post-login-redirect'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -29,13 +30,13 @@ export default function LoginPage() {
       return
     }
 
-    router.push('/dashboard')
+    const destination = await resolvePostLoginRedirect()
+    router.push(destination)
     router.refresh()
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <div className="w-full max-w-sm space-y-8">
+    <div className="w-full max-w-sm space-y-8">
         <div className="space-y-3 text-center">
           <p className="text-caption uppercase tracking-[0.09em] text-muted-foreground/80">SnapEvent</p>
           <h1 className="font-serif text-heading">Welcome back</h1>
@@ -83,7 +84,6 @@ export default function LoginPage() {
             Create one
           </Link>
         </p>
-      </div>
     </div>
   )
 }
