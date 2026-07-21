@@ -87,14 +87,14 @@ export function validateGuestTag(tag: string | null | undefined): { valid: boole
 }
 
 const uuidSchema = z.string().uuid()
-const MAX_UPLOAD_BYTES = 50 * 1024 * 1024 // 50 MB
+const MAX_UPLOAD_BYTES = 100 * 1024 * 1024 // 100 MB
 
 // Inputs for requesting a server-issued signed upload URL
 export const requestUploadUrlSchema = z.object({
   eventId: uuidSchema,
   fileName: z.string().min(1).max(256),
   fileType: z.string().regex(/^image\//, 'Only image files are allowed'),
-  fileSize: z.number().int().positive().max(MAX_UPLOAD_BYTES, 'File exceeds 50 MB limit'),
+  fileSize: z.number().int().positive().max(MAX_UPLOAD_BYTES, 'File exceeds 100 MB limit'),
 })
 
 export type RequestUploadUrlInput = z.infer<typeof requestUploadUrlSchema>

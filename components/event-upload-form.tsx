@@ -34,7 +34,7 @@ interface UploadStatus {
   error?: string
 }
 
-const MAX_IMAGE_SIZE_MB = 50
+const MAX_IMAGE_SIZE_MB = 100
 const MAX_FILES = 50
 const GUEST_TOKEN_KEY = 'guest_upload_token'
 
@@ -88,13 +88,21 @@ export function EventUploadForm({ eventId, eventSlug, eventName, coupleNames, we
     try {
       updateUploadStatus(index, { status: 'compressing', progress: 5 })
 
-      // Magic-byte validation (server-side validation also occurs in requestSignedUploadUrl)
+      // Magic-byte validation (server-side validation also occurs in requestSignedUploadUrl).
+      // Only the file header is sent — the route only ever reads the first 16 bytes — so
+      // this stays well under Vercel's 4.5MB function body limit regardless of photo size.
       const formData = new FormData()
-      formData.append('file', file)
+      formData.append('file', file.slice(0, 64, file.type), file.name)
       const validateRes = await fetch('/api/upload/validate', { method: 'POST', body: formData })
       if (!validateRes.ok) {
-        const { error } = await validateRes.json()
-        throw new Error(error || 'File type not allowed')
+        let message = 'File type not allowed'
+        try {
+          const body = await validateRes.json()
+          message = body.error || message
+        } catch {
+          message = 'Could not validate photo. Please try again.'
+        }
+        throw new Error(message)
       }
 
       updateUploadStatus(index, { progress: 10 })

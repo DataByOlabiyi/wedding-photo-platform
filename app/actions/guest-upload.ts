@@ -33,8 +33,8 @@ export async function requestSignedUploadUrl(
   if (!ALLOWED_MIME_TYPES.has(fileType)) {
     return { error: 'File type not allowed. Photos only (JPEG, PNG, HEIC, WebP).' }
   }
-  if (fileSize > 50 * 1024 * 1024) {
-    return { error: 'File exceeds 50 MB limit.' }
+  if (fileSize > 100 * 1024 * 1024) {
+    return { error: 'File exceeds 100 MB limit.' }
   }
 
   const db = createAdminClient()

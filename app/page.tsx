@@ -54,7 +54,7 @@ const FAQS = [
   },
   {
     q: "How many photos can guests upload?",
-    a: "Up to 50 photos per batch, at up to 50 MB each. Guests can come back and upload more batches whenever they like while the event is open.",
+    a: "Up to 50 photos per batch, at up to 100 MB each. Guests can come back and upload more batches whenever they like while the event is open.",
   },
   {
     q: "Can a guest remove a photo they uploaded?",

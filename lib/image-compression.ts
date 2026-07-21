@@ -62,6 +62,7 @@ export async function compressImage(
       // Convert to blob
       canvas.toBlob(
         (blob) => {
+          URL.revokeObjectURL(img.src)
           if (!blob) {
             reject(new Error("Could not create blob"))
             return
@@ -73,7 +74,10 @@ export async function compressImage(
       )
     }
 
-    img.onerror = () => reject(new Error("Failed to load image"))
+    img.onerror = () => {
+      URL.revokeObjectURL(img.src)
+      reject(new Error("Failed to load image"))
+    }
     img.src = URL.createObjectURL(file)
   })
 }
@@ -107,6 +111,7 @@ export async function generateThumbnail(
 
       canvas.toBlob(
         (blob) => {
+          URL.revokeObjectURL(img.src)
           if (!blob) {
             reject(new Error("Could not create thumbnail blob"))
             return
@@ -118,7 +123,10 @@ export async function generateThumbnail(
       )
     }
 
-    img.onerror = () => reject(new Error("Failed to load image for thumbnail"))
+    img.onerror = () => {
+      URL.revokeObjectURL(img.src)
+      reject(new Error("Failed to load image for thumbnail"))
+    }
     img.src = URL.createObjectURL(file)
   })
 }
