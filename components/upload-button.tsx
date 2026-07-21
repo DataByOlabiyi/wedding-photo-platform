@@ -31,7 +31,7 @@ interface UploadStatus {
   error?: string
 }
 
-const MAX_FILE_SIZE_MB = 50
+const MAX_FILE_SIZE_MB = 100
 const MAX_FILES = 50
 
 export function UploadButton({ guestName }: UploadButtonProps) {
@@ -171,7 +171,7 @@ export function UploadButton({ guestName }: UploadButtonProps) {
       })
 
       if (validFiles.length === 0) {
-        alert("No valid files selected. Please choose photos under 50MB.")
+        alert("No valid files selected. Please choose photos under 100MB.")
         return
       }
 
