@@ -1,10 +1,11 @@
 import { withSentryConfig } from '@sentry/nextjs'
 
-// Enforce Sentry in production — operators must set NEXT_PUBLIC_SENTRY_DSN in Vercel env vars.
+// Sentry no-ops without a DSN. Warn rather than throw: Vercel preview builds
+// also run with NODE_ENV=production, and a hard throw here broke every saas
+// preview deploy from Jun 25 to Jul 22 before the env var was configured.
 if (process.env.NODE_ENV === 'production' && !process.env.NEXT_PUBLIC_SENTRY_DSN) {
-  throw new Error(
-    'NEXT_PUBLIC_SENTRY_DSN is required in production. ' +
-    'Set it in your Vercel project environment variables.'
+  console.warn(
+    'NEXT_PUBLIC_SENTRY_DSN is not set — Sentry error tracking is disabled for this build.'
   )
 }
 
