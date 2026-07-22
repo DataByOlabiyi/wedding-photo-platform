@@ -29,7 +29,7 @@ import {
   isImageFile,
   getMediaType,
 } from "@/lib/image-compression"
-import { generateImageHash, isDuplicateImage } from "@/lib/image-hash"
+import { getFileContentHash } from "@/lib/image-hash"
 import { useMedia } from "@/lib/media-context"
 import { GUEST_TAGS, type GuestTag } from "@/lib/types"
 import { UploadSuccess } from "@/components/upload-success"
@@ -141,33 +141,6 @@ export default function UploadPage() {
           throw new Error(message)
         }
 
-        // Check for duplicates if it's an image
-        if (isImageFile(file)) {
-          try {
-            const currentHash = await generateImageHash(file)
-            const { data: existingMedia } = await supabase
-              .from("media")
-              .select("id, file_hash")
-              .eq("uploaded_by", guestName.trim())
-
-            if (existingMedia) {
-              for (const existing of existingMedia) {
-                if (existing.file_hash && isDuplicateImage(currentHash, existing.file_hash)) {
-                  throw new Error("Duplicate — already uploaded")
-                }
-              }
-            }
-            
-            // Store hash for future duplicate checks
-            updateUploadStatus(index, { status: "compressing", progress: 10 })
-          } catch (hashError) {
-            if (hashError instanceof Error && hashError.message.includes("duplicate")) {
-              throw hashError
-            }
-            // Continue if hashing fails (not critical)
-          }
-        }
-
         updateUploadStatus(index, { status: "compressing", progress: 10 })
 
         let fileToUpload: Blob = file
@@ -240,7 +213,7 @@ export default function UploadPage() {
         let imageHash = null
         if (isImageFile(file)) {
           try {
-            imageHash = await generateImageHash(file)
+            imageHash = await getFileContentHash(file)
           } catch {
             // Hash generation is non-critical; skip silently
           }
@@ -264,7 +237,17 @@ export default function UploadPage() {
           .select()
           .single()
 
-        if (dbError) throw dbError
+        if (dbError) {
+          // 23505 = unique violation on (event_id, guest_token, file_hash) —
+          // this guest already uploaded this exact photo. Remove the orphaned
+          // storage objects so duplicates don't accumulate in the bucket.
+          if (dbError.code === "23505") {
+            const orphans = thumbnailPath ? [filePath, thumbnailPath] : [filePath]
+            await supabase.storage.from("wedding-media").remove(orphans)
+            throw new Error("Already uploaded — this photo is in the gallery.")
+          }
+          throw dbError
+        }
 
         if (mediaData) {
           triggerRefresh()
