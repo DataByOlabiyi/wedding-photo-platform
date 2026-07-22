@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Progress } from '@/components/ui/progress'
 import { compressImage, generateThumbnail, isImageFile, getMediaType } from '@/lib/image-compression'
-import { generateImageHash, isDuplicateImage } from '@/lib/image-hash'
+import { getFileContentHash } from '@/lib/image-hash'
 import { GUEST_TAGS, type GuestTag } from '@/lib/types'
 import { UploadSuccess } from '@/components/upload-success'
 import { UploadProgressBar } from '@/components/upload-progress-bar'
@@ -157,7 +157,7 @@ export function EventUploadForm({ eventId, eventSlug, eventName, coupleNames, we
 
       let imageHash: string | null = null
       if (isImageFile(file)) {
-        try { imageHash = await generateImageHash(file) } catch { /* non-critical */ }
+        try { imageHash = await getFileContentHash(file) } catch { /* non-critical */ }
       }
 
       // Confirm upload server-side — server verifies file exists, inserts media row

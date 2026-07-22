@@ -188,6 +188,14 @@ export async function confirmUpload(
   })
 
   if (insertErr) {
+    // 23505 = unique violation on (event_id, guest_token, file_hash) — the
+    // guest re-uploaded a photo they already added. Remove the orphaned
+    // storage objects so duplicates don't accumulate in the bucket.
+    if (insertErr.code === '23505') {
+      const orphans = thumbnailPath ? [storagePath, thumbnailPath] : [storagePath]
+      await db.storage.from('wedding-media').remove(orphans)
+      return { success: false, error: "Already uploaded — this photo is in the gallery." }
+    }
     console.error('confirmUpload insert error:', insertErr.message)
     return { success: false, error: 'Failed to save upload record. Please try again.' }
   }
