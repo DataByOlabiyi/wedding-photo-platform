@@ -583,6 +583,50 @@ export default function UploadPage() {
               </ul>
             </div>
 
+            {/* Upload Queue */}
+            {uploads.length > 0 && (
+              <div className="mb-8">
+                <div className="mb-4 flex items-center justify-between">
+                  <h3 className="flex items-center gap-2 font-serif text-lg font-semibold text-foreground">
+                    {allComplete && <Sparkles className="h-5 w-5 text-primary" />}
+                    {allComplete ? "Upload Complete!" : "Uploading..."}
+                  </h3>
+                  <span className="rounded-full bg-primary/10 px-3 py-1 text-sm font-medium text-primary">
+                    {completedCount} / {uploads.length}
+                  </span>
+                </div>
+
+                {/* Overall Progress Bar */}
+                {!allComplete && (
+                  <div className="mb-6">
+                    <UploadProgressBar current={completedCount} total={uploads.length} />
+                  </div>
+                )}
+
+                <div className="space-y-3">
+                  {uploads.map((upload, index) => (
+                    <UploadItem
+                      key={index}
+                      upload={upload}
+                      onRemove={() => removeUpload(index)}
+                    />
+                  ))}
+                </div>
+
+                {allComplete && (
+                  <div className="mt-8 space-y-3">
+                    <Button
+                      onClick={() => setStep("success")}
+                      className="w-full rounded-full"
+                      size="lg"
+                    >
+                      Continue
+                    </Button>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Drop Zone */}
             <div
               onDrop={handleDrop}
@@ -630,50 +674,6 @@ export default function UploadPage() {
                 </p>
               </div>
             </div>
-
-            {/* Upload Queue */}
-            {uploads.length > 0 && (
-              <div className="mt-8">
-                <div className="mb-4 flex items-center justify-between">
-                  <h3 className="flex items-center gap-2 font-serif text-lg font-semibold text-foreground">
-                    {allComplete && <Sparkles className="h-5 w-5 text-primary" />}
-                    {allComplete ? "Upload Complete!" : "Uploading..."}
-                  </h3>
-                  <span className="rounded-full bg-primary/10 px-3 py-1 text-sm font-medium text-primary">
-                    {completedCount} / {uploads.length}
-                  </span>
-                </div>
-                
-                {/* Overall Progress Bar */}
-                {!allComplete && (
-                  <div className="mb-6">
-                    <UploadProgressBar current={completedCount} total={uploads.length} />
-                  </div>
-                )}
-                
-                <div className="space-y-3">
-                  {uploads.map((upload, index) => (
-                    <UploadItem
-                      key={index}
-                      upload={upload}
-                      onRemove={() => removeUpload(index)}
-                    />
-                  ))}
-                </div>
-
-                {allComplete && (
-                  <div className="mt-8 space-y-3">
-                    <Button
-                      onClick={() => setStep("success")}
-                      className="w-full rounded-full"
-                      size="lg"
-                    >
-                      Continue
-                    </Button>
-                  </div>
-                )}
-              </div>
-            )}
           </div>
         )}
       </main>
