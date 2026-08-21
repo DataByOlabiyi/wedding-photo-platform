@@ -1,20 +1,24 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Download, ArrowLeft, Printer } from 'lucide-react'
+import { Download, ArrowLeft, Printer, Share2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 import QRCode from 'qrcode'
 import { siteConfig } from '@/lib/site-config'
+import { toast } from 'sonner'
 
 export default function AdminQRPage() {
   const [qrCode, setQrCode] = useState<string>('')
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string>('')
+  const [isSharing, setIsSharing] = useState(false)
 
   const galleryUrl = typeof window !== 'undefined'
     ? `${window.location.origin}/`
     : siteConfig.url + '/'
+
+  const shareText = `📸 Help us capture every moment! Scan to upload your photos from ${siteConfig.coupleNames}'s wedding — ${siteConfig.weddingDate}.`
 
   useEffect(() => { generateQRCode() }, [])
 
@@ -45,6 +49,47 @@ export default function AdminQRPage() {
     document.body.appendChild(a)
     a.click()
     document.body.removeChild(a)
+  }
+
+  const handleShare = async () => {
+    if (!qrCode || isSharing) return
+    setIsSharing(true)
+    try {
+      const nav = navigator as Navigator & {
+        share?: (data: ShareData & { files?: File[] }) => Promise<void>
+        canShare?: (data: { files?: File[] }) => boolean
+      }
+
+      let file: File | undefined
+      try {
+        // Decode the data URL manually (not via fetch) — the app's CSP
+        // connect-src doesn't allow fetching data: URLs.
+        const [meta, base64] = qrCode.split(',')
+        const mime = meta.match(/data:(.*);base64/)?.[1] ?? 'image/png'
+        const bytes = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0))
+        file = new File([bytes], 'wedding-gallery-qr.png', { type: mime })
+      } catch {
+        // Non-critical — share falls back to text + link without the image
+      }
+
+      if (nav.share) {
+        const canShareFile = file && nav.canShare?.({ files: [file] })
+        await nav.share(
+          canShareFile
+            ? { title: `${siteConfig.coupleNames} Wedding`, text: shareText, url: galleryUrl, files: [file!] }
+            : { title: `${siteConfig.coupleNames} Wedding`, text: `${shareText} ${galleryUrl}` }
+        )
+        return
+      }
+
+      await navigator.clipboard.writeText(`${shareText} ${galleryUrl}`)
+      toast.success('Copied to clipboard', { description: 'Paste it into WhatsApp, email, or any app to share.' })
+    } catch (err) {
+      if (err instanceof Error && err.name === 'AbortError') return // user cancelled the share sheet
+      toast.error('Could not share', { description: 'Try downloading the QR code instead.' })
+    } finally {
+      setIsSharing(false)
+    }
   }
 
   return (
@@ -84,11 +129,19 @@ export default function AdminQRPage() {
                 <p className="text-sm text-muted-foreground break-all font-mono">{galleryUrl}</p>
               </div>
 
-              <div className="flex gap-3">
-                <Button onClick={handleDownload} variant="outline" className="flex-1 gap-2">
+              <div className="bg-muted p-4 rounded-lg">
+                <p className="text-sm font-semibold mb-1">Share message preview</p>
+                <p className="text-sm text-muted-foreground">{shareText}</p>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <Button onClick={handleShare} disabled={isSharing} className="gap-2">
+                  <Share2 className="h-4 w-4" />Share
+                </Button>
+                <Button onClick={handleDownload} variant="outline" className="gap-2">
                   <Download className="h-4 w-4" />Download QR
                 </Button>
-                <Button onClick={() => window.print()} className="flex-1 gap-2">
+                <Button onClick={() => window.print()} variant="outline" className="gap-2">
                   <Printer className="h-4 w-4" />Print 6 Tickets
                 </Button>
               </div>
