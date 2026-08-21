@@ -73,10 +73,14 @@ export default function AdminQRPage() {
       }
 
       if (nav.share) {
+        // The link goes in `text` (not just the separate `url` field) even
+        // when a file is attached — many share targets (e.g. WhatsApp) drop
+        // a separate `url` once files are present, showing image + caption
+        // with no link at all otherwise.
         const canShareFile = file && nav.canShare?.({ files: [file] })
         await nav.share(
           canShareFile
-            ? { title: `${siteConfig.coupleNames} Wedding`, text: shareText, url: galleryUrl, files: [file!] }
+            ? { title: `${siteConfig.coupleNames} Wedding`, text: `${shareText} ${galleryUrl}`, files: [file!] }
             : { title: `${siteConfig.coupleNames} Wedding`, text: `${shareText} ${galleryUrl}` }
         )
         return
